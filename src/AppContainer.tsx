@@ -25,6 +25,8 @@ import {
   ReloadInstructions,
 } from 'react-native/Libraries/NewAppScreen';
 
+import { useSelector, useDispatch } from 'react-redux';
+
 type SectionProps = PropsWithChildren<{
   title: string;
 }>;
@@ -62,6 +64,8 @@ function App(): React.JSX.Element {
     backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
   };
 
+  const token = useSelector((state: any) => state.app.token);
+
   return (
     <SafeAreaView style={backgroundStyle}>
       <StatusBar
@@ -76,7 +80,7 @@ function App(): React.JSX.Element {
           style={{
             backgroundColor: isDarkMode ? Colors.black : Colors.white,
           }}>
-          <Section title="Step One">
+          <Section title="Step One">{token}
             Edit <Text style={styles.highlight}>App.tsx</Text> to change this
             screen and then come back to see your edits.
           </Section>
