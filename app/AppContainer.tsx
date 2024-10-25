@@ -25,6 +25,7 @@ import {
 	ReloadInstructions
 } from 'react-native/Libraries/NewAppScreen'
 // import { loginApi } from './services/api/user'
+import "../global.css"
 
 type SectionProps = PropsWithChildren<{
 	title: string
@@ -86,9 +87,7 @@ const AppContainer = (): React.JSX.Element => {
 			<ScrollView contentInsetAdjustmentBehavior="automatic" style={backgroundStyle}>
 				<Header />
 				<View
-					style={{
-						backgroundColor: isDarkMode ? Colors.black : Colors.white
-					}}
+					className='bg-red-500'
 				>
 					<Section title="Step One">
 						Edit <Text style={styles.highlight}>App.tsx</Text> to change this screen and then come
