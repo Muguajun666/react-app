@@ -1,17 +1,18 @@
-import axios, { AxiosInstance } from "axios";
-import {API_BASE_URL} from '@env'
+import axios, { AxiosInstance } from 'axios'
+import { API_BASE_URL } from '@env'
+import { store } from '../store/index'
 
 const service: AxiosInstance = axios.create({
 	baseURL: API_BASE_URL,
-	timeout: 15 *1000,
+	timeout: 15 * 1000,
 	withCredentials: true
 })
 
 service.interceptors.request.use(
 	(config) => {
-		// 配置token
+
 		config.headers['Accept-Language'] = 'en-US'
-		// config.headers['Authorization'] = conf.getToken()
+		config.headers['Authorization'] = store.getState().app.token
 		return config
 	},
 	(error) => {
@@ -23,6 +24,7 @@ service.interceptors.request.use(
 service.interceptors.response.use(
 	(res) => {
 		const { data } = res
+		console.log('接口返回数据: ', data)
 		if (!data.success) {
 		}
 		return data
