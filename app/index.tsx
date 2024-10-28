@@ -6,11 +6,11 @@ import '../global.css'
 
 const App = () => {
 	return (
-		<Provider store={store}>
-			<PersistGate loading={null} persistor={persistor}>
-				<AppContainer />
-			</PersistGate>
-		</Provider>
+			<Provider store={store}>
+				<PersistGate loading={null} persistor={persistor}>
+					<AppContainer />
+				</PersistGate>
+			</Provider>
 	)
 }
 
