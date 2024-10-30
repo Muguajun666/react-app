@@ -7,5 +7,5 @@ export const loginApi = (params: ILoginParams) => {
 }
 
 export const getUserInfoApi = () => {
-  return request.get(APP_API_PREFIX + 'user/getInfo')
+	return request.get(APP_API_PREFIX + 'user/getInfo')
 }

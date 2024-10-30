@@ -17,7 +17,7 @@ import {
 	StatusBar,
 	Text,
 	View,
-  StyleSheet
+	StyleSheet
 } from 'react-native'
 import { setUser } from '../../store/reducers/user'
 
@@ -38,7 +38,7 @@ const Test = (): React.JSX.Element => {
 		const res = (await loginApi({ loginType: 'TEMP', phoneMac: '123456' })) as IResponse
 		if (res.success) {
 			dispatch(setToken({ token: res.object }))
-      getUserInfo()
+			getUserInfo()
 		}
 	}
 
@@ -86,7 +86,7 @@ const Test = (): React.JSX.Element => {
 			loginHandle()
 		} else {
 			getUserInfo()
-    }
+		}
 	}, [])
 
 	useEffect(() => {
@@ -151,7 +151,7 @@ const Test = (): React.JSX.Element => {
 
 const styles = StyleSheet.create({
 	text: {
-		fontSize: 10,
+		fontSize: 10
 	}
 })
 

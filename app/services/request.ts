@@ -10,7 +10,6 @@ const service: AxiosInstance = axios.create({
 
 service.interceptors.request.use(
 	(config) => {
-
 		config.headers['Accept-Language'] = 'en-US'
 		config.headers['Authorization'] = store.getState().app.token
 		return config
