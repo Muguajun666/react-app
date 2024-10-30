@@ -1,5 +1,7 @@
-import { ScrollView, StyleProp, StyleSheet, Text, TextInput, View, ViewStyle } from 'react-native'
+import { FlatList, ScrollView, StyleProp, StyleSheet, Text, TextInput, View, ViewStyle } from 'react-native'
 import { TMessage } from '../../type'
+import { Avatar, AvatarFallback, AvatarImage } from '../../../../components/ui/avatar'
+import { IMG_BASE_URL } from '@env'
 
 interface MessageBoxProps {
 	style?: StyleProp<ViewStyle>
@@ -12,9 +14,30 @@ const MessageBox = (props: MessageBoxProps): React.JSX.Element => {
 	const renderMessageItem = (message: TMessage, index: number) => {
 		const { content, type, id, userName, avatar } = message
 
+		let renderItem: React.JSX.Element | null = null
+
+		if (type === 'system') {
+			renderItem = <Text style={[styles.textWrapper, styles.systemMessage]}>{content}</Text>
+		} else if (type === 'user') {
+			renderItem = (
+				<View style={[styles.userMessageWrapper, styles.textWrapper]}>
+					<Avatar alt="Avatar" style={styles.avatar}>
+						<AvatarImage
+							source={
+								avatar
+									? { uri: `${IMG_BASE_URL}${avatar}` }
+									: require('../../../../assets/images/avatar.png')
+							}
+						/>
+					</Avatar>
+					<Text style={[styles.userMessage]}>{userName}: {content}</Text>
+				</View>
+			)
+		}
+
 		return (
 			<View key={id} style={{ marginTop: index === 0 ? 0 : 7 }}>
-				<Text style={[styles.textWrapper, type === 'system' && styles.systemMessage, type === 'user' && styles.userMessage]}>{content}</Text>
+				{renderItem}
 			</View>
 		)
 	}
@@ -33,14 +56,28 @@ const styles = StyleSheet.create({
 		alignSelf: 'flex-start',
 		borderRadius: 9
 	},
-  systemMessage: {
-    fontSize: 11,
-    color: '#69EFFFFF'
-  },
-  userMessage: {
-    fontSize: 13,
-    color: '#FFFFFFFF'
-  }
+	systemMessage: {
+		fontSize: 11,
+		color: '#69EFFFFF'
+	},
+	userMessage: {
+		fontSize: 13,
+		color: '#FFFFFFFF',
+		lineHeight: 18,
+    maxWidth: 230
+	},
+	userMessageWrapper: {
+		display: 'flex',
+		flexDirection: 'row',
+		alignItems: 'center',
+	},
+	avatar: {
+		width: 23,
+		height: 23,
+		borderWidth: 1,
+		borderColor: '#FFFFFF',
+    marginRight: 6
+	}
 })
 
 export default MessageBox

@@ -35,18 +35,20 @@ const GameSwiper = (props: GameSwiperProps): React.JSX.Element => {
 
 const styles = StyleSheet.create({
 	wrapper: {
-		marginTop: 180
+		marginTop: 190,
+    marginLeft: 10
 	},
 	slideWrapper: {
-		width: 70,
-		height: 70,
+		width: 60,
+		height: 60,
 		borderRadius: 10,
 		justifyContent: 'center',
 		alignItems: 'center',
 		backgroundColor: '#fff'
 	},
 	pagination: {
-		bottom: 10
+		bottom: 10,
+    left: 10
 	}
 })
 

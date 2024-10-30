@@ -3204,6 +3204,7 @@ __metadata:
     react-devtools: ^6.0.1
     react-native: 0.75.2
     react-native-dotenv: ^3.4.11
+    react-native-emoji-selector: ^0.2.0
     react-native-modal: ^13.0.1
     react-native-reanimated: ^3.16.1
     react-native-safe-area-context: ^4.12.0
@@ -4818,6 +4819,13 @@ __metadata:
   version: 0.13.1
   resolution: "emittery@npm:0.13.1"
   checksum: 2b089ab6306f38feaabf4f6f02792f9ec85fc054fda79f44f6790e61bbf6bc4e1616afb9b232e0c5ec5289a8a452f79bfa6d905a6fd64e94b49981f0934001c6
+  languageName: node
+  linkType: hard
+
+"emoji-datasource@npm:^6.0.0":
+  version: 6.1.1
+  resolution: "emoji-datasource@npm:6.1.1"
+  checksum: e7e48f6303448ee5fa2e761f24c7df35080319d41049e7c8d8a3d57103d2f0ae5dfcb859a19e3fc34d70a69b024fe9a40924f5376820d623fd865641b0b98517
   languageName: node
   linkType: hard
 
@@ -9414,6 +9422,15 @@ __metadata:
   peerDependencies:
     "@babel/runtime": ^7.20.6
   checksum: 3ebac2c2ed79dd7e4920fd3fc2da9187413b7190231618e4858b46c47833677838b96d531afe7bd5c4b0a60454dba40cb8708722210df5d522e30aefbf41da05
+  languageName: node
+  linkType: hard
+
+"react-native-emoji-selector@npm:^0.2.0":
+  version: 0.2.0
+  resolution: "react-native-emoji-selector@npm:0.2.0"
+  dependencies:
+    emoji-datasource: ^6.0.0
+  checksum: 682dfa91a0d1d81e4af38994346c80713bd7075c1459633b3204d08d33227c59d3a93a995bd3a32a893e734429662795b8b3566471ad81b67e500508748e0129
   languageName: node
   linkType: hard
 

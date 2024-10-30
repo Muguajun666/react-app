@@ -12,6 +12,7 @@ import Seat from './components/Seat'
 import Icon from '../../components/Icon'
 import MessageBox from './components/MessageBox'
 import GameSwiper from './components/GameSwiper'
+import MessageInput from './components/MessageInput'
 
 export type VoiceRoomParams = {
 	key: string
@@ -29,28 +30,15 @@ const VoiceRoom = (): React.JSX.Element => {
 	const { params } = useRoute<VoiceRoomParams>()
 	const { coverImg, subject: roomName, aliRoomId: roomId, heatValue } = params
 
+	const [isOnSeat, setIsOnSeat] = useState<boolean>(false)
+
+	const [isOnMic, setIsOnMic] = useState<boolean>(false)
+
 	const [audiences, setAudiences] = useState<Array<any>>([])
 
 	const [seats, setSeats] = useState<Array<SeatInfo>>()
 
-	const [messageList, setMessageList] = useState<Array<TMessage>>([
-		{
-			id: '1',
-			type: 'system',
-			content: 'Hello World'
-		},
-		{
-			id: '2',
-			type: 'system',
-			content: 'Hello World 2'
-		},
-		{
-			id: '3',
-			type: 'user',
-			userName: 'userA',
-			content: 'Hello World Hello World Hello World Hello World Hello World'
-		}
-	])
+	const [messageList, setMessageList] = useState<Array<TMessage>>([])
 
 	const [gameList, setGameList] = useState<Array<TGameInfo>>([
 		{
@@ -63,6 +51,19 @@ const VoiceRoom = (): React.JSX.Element => {
 
 	const renderHeaderAvatar = () => {
 		return audiences.map((item, index) => {})
+	}
+
+	const microphoneHandle = () => {
+		if (!isOnSeat) return
+		if (isOnMic) {
+			console.log('下麦')
+			// todo 下麦操作
+			setIsOnMic(false)
+		} else {
+			console.log('上麦')
+			// todo 上麦操作
+			setIsOnMic(true)
+		}
 	}
 
 	return (
@@ -165,7 +166,7 @@ const VoiceRoom = (): React.JSX.Element => {
 			{/* message-box && game-swiper */}
 			<View
 				className="w-full flex flex-row justify-center"
-				style={{ paddingLeft: 15, paddingRight: 15 }}
+				style={{ paddingLeft: 15, paddingRight: 15, marginTop: -5 }}
 			>
 				{/* message-box */}
 				<MessageBox
@@ -178,6 +179,22 @@ const VoiceRoom = (): React.JSX.Element => {
 				<View className="relative" style={{ width: 70, height: 280 }}>
 					<GameSwiper swiperData={gameList} />
 				</View>
+			</View>
+			{/* message-input && microphone-handler */}
+			<View className="w-full flex flex-row items-center" style={{ marginLeft: 30, marginTop: 10 }}>
+				<MessageInput />
+				{isOnSeat && (
+					<Pressable onPress={microphoneHandle} style={{ marginLeft: 50 }}>
+						<Image
+							source={
+								isOnMic
+									? require('../../assets/images/mic-off.png')
+									: require('../../assets/images/mic-on.png')
+							}
+							style={{ width: 30, height: 30 }}
+						/>
+					</Pressable>
+				)}
 			</View>
 		</View>
 	)

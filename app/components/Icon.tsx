@@ -3,6 +3,7 @@ import EntypoIcon from 'react-native-vector-icons/Entypo'
 import IoniconsIcon from 'react-native-vector-icons/Ionicons'
 import FontistoIcon from 'react-native-vector-icons/Fontisto'
 import FontAwesome5Icon from 'react-native-vector-icons/FontAwesome5'
+import SimpleLineIconsIcon from 'react-native-vector-icons/SimpleLineIcons'
 import { StyleProp, ViewStyle } from 'react-native'
 
 interface IconProps {
@@ -27,6 +28,8 @@ const Icon = (props: IconProps): React.JSX.Element => {
 			return <FontistoIcon name={name} size={size} color={color} style={style} />
 		case 'FontAwesome5':
 			return <FontAwesome5Icon name={name} size={size} color={color} style={style} />
+		case 'SimpleLineIcons':
+			return <SimpleLineIconsIcon name={name} size={size} color={color} style={style} />
 	}
 
 	return <></>
