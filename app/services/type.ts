@@ -1,10 +1,10 @@
 import { AxiosResponse } from 'axios'
 
-export interface IResponse extends AxiosResponse {
+export interface IResponse<T> extends AxiosResponse {
 	code: string
 	extParams: string | null
 	message: string | null
-	object: any
+	object: T
 	redirect: string | null
 	success: boolean
 }
@@ -26,6 +26,15 @@ export interface IGetRoomListParams {
 	pageNum?: number
 	pageSize?: number
 	subject?: string
+}
+
+export interface IJoinRoomParams {
+	id: number
+	password?: string
+}
+
+export interface IGetRtcTokenParams {
+	roomId: string
 }
 
 export type TRoomListItem = {
@@ -53,4 +62,20 @@ export type TRoomUserDTO = {
 	joinTime?: number | null
 	calTimes?: number | null
 	micIndex?: number
+}
+
+export type RtcTokenObject = {
+	appId: string
+	rtcToken: string
+	timestamp: string
+}
+
+export type ImTokenObject = {
+	appId: string
+	appSign: string
+	appToken: string
+	nonce: string
+	role: string
+	timestamp: string
+	userId: string
 }

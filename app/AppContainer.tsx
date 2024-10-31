@@ -38,6 +38,8 @@ function HomeScreen() {
 						console.log(VoiceRoomModule.helloWorld())
 						const res = await VoiceRoomModule.helloWorldPromise()
 						console.log(res)
+						// const res2 = await VoiceRoomModule.callAarMethod()
+						// console.log(res2)
 					}}
 				></Button>
 			</View>

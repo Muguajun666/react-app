@@ -1,8 +1,13 @@
 import React, { useEffect, useState } from 'react'
 import { loginApi, getUserInfoApi } from '../../services/api/user'
-import { getRoomListApi } from '../../services/api/voice'
+import {
+	getImTokenApi,
+	getRoomListApi,
+	getRtcTokenApi,
+	joinRoomApi
+} from '../../services/api/voice'
 import { useDispatch, useSelector } from 'react-redux'
-import { IResponse, TRoomListItem } from '../../services/type'
+import { IResponse, ImTokenObject, RtcTokenObject, TRoomListItem } from '../../services/type'
 import { setToken, clearToken } from '../../store/reducers/app'
 import { IMG_BASE_URL } from '@env'
 import Navigation from '../../navigation/appNavigation'
@@ -17,11 +22,14 @@ import {
 	StatusBar,
 	Text,
 	View,
-	StyleSheet
+	StyleSheet,
+	NativeModules
 } from 'react-native'
 import { setUser } from '../../store/reducers/user'
 
 const Test = (): React.JSX.Element => {
+	const { VoiceRoomModule } = NativeModules
+
 	const token = useSelector((state: any) => state.app.token)
 	const userInfo = useSelector((state: any) => state.user.userInfo)
 	const dispatch = useDispatch()
@@ -35,7 +43,7 @@ const Test = (): React.JSX.Element => {
 	const [currentRoom, setCurrentRoom] = useState<TRoomListItem>({})
 
 	const loginHandle = async () => {
-		const res = (await loginApi({ loginType: 'TEMP', phoneMac: '123456' })) as IResponse
+		const res = (await loginApi({ loginType: 'TEMP', phoneMac: '123456' })) as IResponse<any>
 		if (res.success) {
 			dispatch(setToken({ token: res.object }))
 			getUserInfo()
@@ -48,10 +56,11 @@ const Test = (): React.JSX.Element => {
 
 	const createVoiceRoom = () => {
 		console.log('创建房间')
+		VoiceRoomModule.createVoiceRoom()
 	}
 
 	const getUserInfo = async () => {
-		const res = (await getUserInfoApi()) as IResponse
+		const res = (await getUserInfoApi()) as IResponse<any>
 		if (res.success) {
 			dispatch(setUser({ userInfo: res.object }))
 		}
@@ -60,7 +69,7 @@ const Test = (): React.JSX.Element => {
 	const getVoiceRooms = async () => {
 		console.log('获取房间')
 		setIsLoading(true)
-		const res = (await getRoomListApi({ pageNum: 1, pageSize: 10 })) as IResponse
+		const res = (await getRoomListApi({ pageNum: 1, pageSize: 10 })) as IResponse<any>
 		if (res.success) {
 			setVoiceRoomList(res.object.list)
 			setIsLoading(false)
@@ -70,9 +79,33 @@ const Test = (): React.JSX.Element => {
 
 	const joinRoomHandle = async (room: TRoomListItem) => {
 		console.log('加入房间', room)
-		// setShowRoom(true)
-		// setCurrentRoom(room)
-		Navigation.navigate('VoiceRoom', room)
+
+		const joinRoomRes = (await joinRoomApi({ id: room.id! })) as IResponse<any>
+		console.log('joinRoomRes', joinRoomRes)
+		if (!joinRoomRes.success) return
+
+		const rtctokenRes = (await getRtcTokenApi({
+			roomId: room.aliRoomId!
+		})) as IResponse<RtcTokenObject>
+		console.log('rtctokenRes', rtctokenRes)
+		if (!rtctokenRes.success) return
+
+		const imTokenRes = (await getImTokenApi()) as IResponse<ImTokenObject>
+		console.log('imTokenRes', imTokenRes)
+		if (!imTokenRes.success) return
+
+		const creatRoomRes = await VoiceRoomModule.createVoiceRoom(
+			userInfo,
+			imTokenRes.object,
+			rtctokenRes.object,
+			room
+		)
+
+		const { result, msg } = creatRoomRes
+		console.log('creatRoomRes', result, msg)
+		if (result) {
+			Navigation.navigate('VoiceRoom', room)
+		}
 	}
 
 	const tokenCheckHandle = () => {
