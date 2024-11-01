@@ -1,9 +1,13 @@
 package com.mynewproject;
 
+import androidx.annotation.NonNull;
+
 import com.alivc.auimessage.model.token.IMNewToken;
 import com.alivc.auimessage.model.token.IMNewTokenAuth;
+import com.alivc.rtc.AliRtcEngine;
 import com.aliyun.auikits.biz.voiceroom.VoiceRoomServerConstant;
 import com.aliyun.auikits.rtc.ClientMode;
+import com.aliyun.auikits.voice.ARTCVoiceRoomEngineDelegate;
 import com.aliyun.auikits.voiceroom.callback.ActionCallback;
 import com.aliyun.auikits.voiceroom.external.RtcInfo;
 import com.facebook.react.bridge.NativeModule;
@@ -24,17 +28,35 @@ import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.bridge.WritableNativeMap;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class VoiceRoomModule extends ReactContextBaseJavaModule {
 
     private static final String ROOM_MAP_KEY = "roomMap";
 
-    private static Map<String, Object> roomMap = new HashMap<>();
+    private static final Map<String, ARTCVoiceRoomEngine> roomMap = new HashMap<String, ARTCVoiceRoomEngine>();
 
     public VoiceRoomModule(ReactApplicationContext reactContext) {
         super(reactContext);
     }
+
+    public ARTCVoiceRoomEngineDelegate voiceRoomObserver = new VoiceRoomObserver() {
+        @Override
+        public void onJoin(String roomId, String uid) {
+            System.out.println("onJoin: "+roomId+"+"+uid);
+        }
+
+        @Override
+        public void onJoinedRoom(UserInfo userInfo) {
+            System.out.println("onJoinedRoom: " + userInfo.userName);
+        }
+
+        @Override
+        public void onLeave() {
+            System.out.println("onLeave");
+        }
+    };
 
     @Override
     public String getName() {
@@ -45,13 +67,19 @@ public class VoiceRoomModule extends ReactContextBaseJavaModule {
     public void createVoiceRoom(ReadableMap baseUserInfo, ReadableMap baseImInfo, ReadableMap baseRtcInfo, ReadableMap baseRoomInfo, Promise promise) {
         WritableMap response = new WritableNativeMap();
         try {
-            // todo 先从roomMap里面找
-
-            ARTCVoiceRoomEngine voiceRoom = AUIVoiceRoomFactory.createVoiceRoom();
+            // 先从roomMap里面找
+            ARTCVoiceRoomEngine voiceRoom;
+            if (roomMap.containsKey(baseRoomInfo.getString("aliRoomId"))) {
+                voiceRoom = roomMap.get(baseRoomInfo.getString("aliRoomId"));
+                System.out.println("已有房间实例");
+            } else {
+                voiceRoom = AUIVoiceRoomFactory.createVoiceRoom();
+                System.out.println("新建房间实例");
+            }
 
             // 构建 UserInfo
             UserInfo userInfo = new UserInfo(baseUserInfo.getString("id"), baseUserInfo.getString("id"));
-            userInfo.avatarUrl = baseUserInfo.isNull("avatar") ? "" : baseUserInfo.getString("avatar");
+            userInfo.avatarUrl = baseUserInfo.isNull("avatar") ? "null" : baseUserInfo.getString("avatar");
             userInfo.userName = baseUserInfo.getString("nickName");
 
             // 构建 IMNewTokenAuth
@@ -117,25 +145,66 @@ public class VoiceRoomModule extends ReactContextBaseJavaModule {
                     System.out.println("--------------initRoom-------------");
                     if (code == 0) {
                         roomMap.put(baseRoomInfo.getString("aliRoomId"), voiceRoom);
-//                        voiceRoom.joinRoom(roomInfo, rtcInfo, joinRoomCallback);
-                        response.putBoolean("result",true);
-                        response.putString("msg","初始化房间成功");
-                        promise.resolve(response);
+
+                        System.out.println("初始化成功");
+                        voiceRoom.addObserver(voiceRoomObserver);
+
+                        voiceRoom.joinRoom(roomInfo, rtcInfo, joinRoomCallback);
+
                     } else {
                         roomMap.remove(baseRoomInfo.getString("aliRoomId"));
+
                         voiceRoom.release();
+
                         response.putBoolean("result",false);
                         response.putString("msg","初始化失败");
                         promise.resolve(response);
                     }
                 }
             };
+
             voiceRoom.init(getReactApplicationContext(), ClientMode.VOICE_ROOM, VoiceRoomServerConstant.APP_ID, userInfo, imNewToken, initRoomCallback);
+
         } catch (Exception e) {
             System.out.println(e.getMessage());
             response.putBoolean("result",false);
             response.putString("msg","异常报错");
             promise.resolve(response);
+        }
+    }
+
+    @ReactMethod
+    public void leaveRoom(String aliRoomId, Promise promise) {
+        ARTCVoiceRoomEngine voiceRoom = roomMap.get(aliRoomId);
+
+        // 构建离开房间回调
+        ActionCallback leaveRoomCallback = new ActionCallback(){
+            @Override
+            public void onResult(int code, String msg, Map<String, Object> params) {
+                System.out.println("--------------leaveRoom-------------");
+                System.out.println(code);
+                System.out.println(msg);
+                System.out.println(params);
+                System.out.println("--------------leaveRoom-------------");
+                if (code == 0) {
+                    System.out.println("离开房间成功");
+                    voiceRoom.removeObserver(voiceRoomObserver);
+                    voiceRoom.release();
+                    roomMap.remove(aliRoomId);
+                    promise.resolve(true);
+                } else {
+                    System.out.println("离开房间失败");
+                    promise.resolve(false);
+                }
+            }
+        };
+
+        // 离开房间
+        if (voiceRoom != null) {
+            voiceRoom.leaveRoom(leaveRoomCallback);
+        } else {
+            System.out.println("房间实例不存在");
+            promise.resolve(false);
         }
     }
 

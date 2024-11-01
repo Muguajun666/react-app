@@ -1,6 +1,6 @@
-import { PropsWithChildren, forwardRef, useState } from 'react'
+import { PropsWithChildren, forwardRef, useEffect, useState } from 'react'
 import { TRoomListItem } from '../../services/type'
-import { Button, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { Button, Image, Pressable, ScrollView, StyleSheet, Text, View, NativeModules } from 'react-native'
 import { RouteProp, useRoute } from '@react-navigation/native'
 import { BlurView } from '@react-native-community/blur'
 import { IMG_BASE_URL } from '@env'
@@ -20,14 +20,15 @@ export type VoiceRoomParams = {
 	params: TRoomListItem
 }
 
-const backHandle = () => {
-	Navigation.back()
-}
+
 
 const VoiceRoom = (): React.JSX.Element => {
+	const { VoiceRoomModule } = NativeModules
+
 	const userInfo = useSelector((state: any) => state.user.userInfo)
 
 	const { params } = useRoute<VoiceRoomParams>()
+
 	const { coverImg, subject: roomName, aliRoomId: roomId, heatValue } = params
 
 	const [isOnSeat, setIsOnSeat] = useState<boolean>(false)
@@ -48,6 +49,21 @@ const VoiceRoom = (): React.JSX.Element => {
 			name: 'GameB'
 		}
 	])
+
+	const [amIMaster, setAmIMaster] = useState<boolean>(false)
+
+	useEffect(() => {
+		setAmIMaster(userInfo.userId === params.createUser!.toString())
+	}, [])
+
+	const backHandle = async() => {
+		// 离开房间
+		const leaveRoomRes = await VoiceRoomModule.leaveRoom(roomId)
+
+		leaveRoomRes && Navigation.back()
+	}
+
+	const masterSeatHandle = () => {}
 
 	const renderHeaderAvatar = () => {
 		return audiences.map((item, index) => {})
@@ -146,7 +162,7 @@ const VoiceRoom = (): React.JSX.Element => {
 			</View>
 			{/* master-avatar */}
 			<View className="w-full flex flex-row items-center justify-center" style={{ marginTop: 15 }}>
-				<Seat isMaster={true} />
+				<Seat isMaster={true} onPress={masterSeatHandle}/>
 			</View>
 			{/* other-avatar */}
 			<View
