@@ -26,6 +26,7 @@ import com.aliyun.auikits.voiceroom.factory.AUIVoiceRoomFactory;
 import com.aliyun.auikits.voice.ARTCVoiceRoomEngine;
 import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.bridge.WritableNativeMap;
+import com.facebook.react.modules.core.DeviceEventManagerModule;
 
 import java.util.HashMap;
 import java.util.List;
@@ -35,28 +36,18 @@ public class VoiceRoomModule extends ReactContextBaseJavaModule {
 
     private static final String ROOM_MAP_KEY = "roomMap";
 
-    private static final Map<String, ARTCVoiceRoomEngine> roomMap = new HashMap<String, ARTCVoiceRoomEngine>();
+    protected Map<String, ARTCVoiceRoomEngine> roomMap = new HashMap<String, ARTCVoiceRoomEngine>();
+    protected UserInfo userInfo;
+    protected IMNewTokenAuth imNewTokenAuth;
+    protected IMNewToken imNewToken;
+    protected UserInfo createUser;
+    protected RoomInfo roomInfo;
+    protected RtcInfo rtcInfo;
+    protected ARTCVoiceRoomEngineDelegate voiceRoomObserver;
 
     public VoiceRoomModule(ReactApplicationContext reactContext) {
         super(reactContext);
     }
-
-    public ARTCVoiceRoomEngineDelegate voiceRoomObserver = new VoiceRoomObserver() {
-        @Override
-        public void onJoin(String roomId, String uid) {
-            System.out.println("onJoin: "+roomId+"+"+uid);
-        }
-
-        @Override
-        public void onJoinedRoom(UserInfo userInfo) {
-            System.out.println("onJoinedRoom: " + userInfo.userName);
-        }
-
-        @Override
-        public void onLeave() {
-            System.out.println("onLeave");
-        }
-    };
 
     @Override
     public String getName() {
@@ -81,6 +72,7 @@ public class VoiceRoomModule extends ReactContextBaseJavaModule {
             UserInfo userInfo = new UserInfo(baseUserInfo.getString("id"), baseUserInfo.getString("id"));
             userInfo.avatarUrl = baseUserInfo.isNull("avatar") ? "null" : baseUserInfo.getString("avatar");
             userInfo.userName = baseUserInfo.getString("nickName");
+            this.userInfo = userInfo;
 
             // 构建 IMNewTokenAuth
             IMNewTokenAuth imNewTokenAuth = new IMNewTokenAuth();
@@ -88,6 +80,7 @@ public class VoiceRoomModule extends ReactContextBaseJavaModule {
             imNewTokenAuth.user_id = baseImInfo.getString("userId");
             imNewTokenAuth.role = baseImInfo.getString("role");
             imNewTokenAuth.timestamp = Long.parseLong(baseImInfo.getString("timestamp"));
+            this.imNewTokenAuth = imNewTokenAuth;
 
             // 构建 IMNewToken
             IMNewToken imNewToken = new IMNewToken();
@@ -95,6 +88,7 @@ public class VoiceRoomModule extends ReactContextBaseJavaModule {
             imNewToken.app_sign = baseImInfo.getString("appSign");
             imNewToken.app_token = baseImInfo.getString("appToken");
             imNewToken.auth = imNewTokenAuth;
+            this.imNewToken = imNewToken;
 
             // 构建 createUser
             UserInfo createUser = null;
@@ -104,35 +98,16 @@ public class VoiceRoomModule extends ReactContextBaseJavaModule {
             } else {
                 createUser = new UserInfo(createUserId, createUserId);
             }
+            this.createUser = createUser;
 
             // 构建 RoomInfo
             RoomInfo roomInfo = new RoomInfo(baseRoomInfo.getString("aliRoomId"));
             roomInfo.xqRoomId = baseRoomInfo.getInt("id");
             roomInfo.creator = createUser;
+            this.roomInfo = roomInfo;
 
             // 构建 RtcInfo
-            RtcInfo rtcInfo = new RtcInfo(baseRtcInfo.getString("rtcToken"), Long.parseLong(baseRtcInfo.getString("timestamp")), VoiceRoomServerConstant.RTC_GLSB);
-
-            // 构建 joinRoomCallback
-            ActionCallback joinRoomCallback = new ActionCallback() {
-                @Override
-                public void onResult(int code, String msg, Map<String, Object> params) {
-                    System.out.println("--------------joinRoom-------------");
-                    System.out.println(code);
-                    System.out.println(msg);
-                    System.out.println(params);
-                    System.out.println("--------------joinRoom-------------");
-                    if (code == 0) {
-                        response.putBoolean("result",true);
-                        response.putString("msg","加入房间成功");
-                        promise.resolve(response);
-                    } else {
-                        response.putBoolean("result",false);
-                        response.putString("msg","加入房间失败");
-                        promise.resolve(response);
-                    }
-                }
-            };
+            this.rtcInfo = new RtcInfo(baseRtcInfo.getString("rtcToken"), Long.parseLong(baseRtcInfo.getString("timestamp")), VoiceRoomServerConstant.RTC_GLSB);
 
             // 构建 initRoomCallback
             ActionCallback initRoomCallback = new ActionCallback(){
@@ -145,17 +120,12 @@ public class VoiceRoomModule extends ReactContextBaseJavaModule {
                     System.out.println("--------------initRoom-------------");
                     if (code == 0) {
                         roomMap.put(baseRoomInfo.getString("aliRoomId"), voiceRoom);
-
-                        System.out.println("初始化成功");
-                        voiceRoom.addObserver(voiceRoomObserver);
-
-                        voiceRoom.joinRoom(roomInfo, rtcInfo, joinRoomCallback);
-
+                        response.putBoolean("result",true);
+                        response.putString("msg","初始化成功");
+                        promise.resolve(response);
                     } else {
                         roomMap.remove(baseRoomInfo.getString("aliRoomId"));
-
                         voiceRoom.release();
-
                         response.putBoolean("result",false);
                         response.putString("msg","初始化失败");
                         promise.resolve(response);
@@ -174,8 +144,68 @@ public class VoiceRoomModule extends ReactContextBaseJavaModule {
     }
 
     @ReactMethod
+    public void joinRoom(String aliRoomId, Promise promise) {
+        System.out.println("joinRoom");
+        WritableMap response = new WritableNativeMap();
+        ReactContext reactContext = getReactApplicationContext();
+        ARTCVoiceRoomEngine voiceRoom = roomMap.get(aliRoomId);
+
+        // 构建 joinRoomCallback
+        ActionCallback joinRoomCallback = new ActionCallback() {
+            @Override
+            public void onResult(int code, String msg, Map<String, Object> params) {
+                System.out.println("--------------joinRoom-------------");
+                System.out.println(code);
+                System.out.println(msg);
+                System.out.println(params);
+                System.out.println("--------------joinRoom-------------");
+                if (code == 0) {
+                    response.putBoolean("result",true);
+                    response.putString("msg","加入房间成功");
+                    promise.resolve(response);
+                } else {
+                    response.putBoolean("result",false);
+                    response.putString("msg","加入房间失败");
+                    promise.resolve(response);
+                }
+            }
+        };
+
+
+
+        this.voiceRoomObserver = new VoiceRoomObserver() {
+            @Override
+            public void onJoin(String roomId, String uid) {
+                WritableMap params = Arguments.createMap();
+                params.putString("roomId", roomId);
+                params.putString("uid", uid);
+                reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit("onJoin", params);
+            }
+
+            @Override
+            public void onJoinedRoom(UserInfo userInfo) {
+                WritableMap params = Arguments.createMap();
+                params.putString("userName", userInfo.userName);
+                params.putString("avatarUrl", userInfo.avatarUrl);
+                reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit("onJoinedRoom", params);
+            }
+
+            @Override
+            public void onLeave() {
+                reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit("onLeave", null);
+            }
+        };
+
+
+
+        voiceRoom.addObserver(this.voiceRoomObserver);
+        voiceRoom.joinRoom(this.roomInfo, this.rtcInfo, joinRoomCallback);
+    }
+
+    @ReactMethod
     public void leaveRoom(String aliRoomId, Promise promise) {
         ARTCVoiceRoomEngine voiceRoom = roomMap.get(aliRoomId);
+        ARTCVoiceRoomEngineDelegate voiceRoomObserver = this.voiceRoomObserver;
 
         // 构建离开房间回调
         ActionCallback leaveRoomCallback = new ActionCallback(){

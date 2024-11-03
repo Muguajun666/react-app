@@ -77,7 +77,7 @@ const Test = (): React.JSX.Element => {
 		}
 	}
 
-	const joinRoomHandle = async (room: TRoomListItem) => {
+	const creatRoomHandle = async (room: TRoomListItem) => {
 		console.log('加入房间', room)
 
 		const joinRoomRes = (await joinRoomApi({ id: room.id! })) as IResponse<any>
@@ -133,7 +133,7 @@ const Test = (): React.JSX.Element => {
 			<Pressable
 				className="bg-green-100 mt-2 h-20 flex flex-row justify-around items-center"
 				onPress={() => {
-					joinRoomHandle(item)
+					creatRoomHandle(item)
 				}}
 			>
 				<Image
