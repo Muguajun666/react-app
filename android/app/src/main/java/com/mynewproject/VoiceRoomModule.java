@@ -60,9 +60,8 @@ public class VoiceRoomModule extends ReactContextBaseJavaModule {
     @ReactMethod
     public void setAuthorizeToken(String authorization, Promise promise) {
         System.out.println("---------authorization----------");
-//        System.out.println(authorization);
-        System.out.println("Bearer " + this.rtcInfo.token);
-        Singleton.getInstance(Server.class).setAuthorizeToken("Bearer " + this.rtcInfo.token);
+        System.out.println(authorization);
+        Singleton.getInstance(Server.class).setAuthorizeToken(authorization);
         promise.resolve(null);
     }
 

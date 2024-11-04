@@ -24,7 +24,7 @@ import MessageBox from './components/MessageBox'
 import GameSwiper from './components/GameSwiper'
 import MessageInput from './components/MessageInput'
 import { initialSeats } from './config'
-import { LISTENER } from '../../components/Toast';
+import { LISTENER } from '../../components/Toast'
 import EventEmitter from '../../utils/emitter'
 
 export type VoiceRoomParams = {
@@ -77,7 +77,7 @@ const VoiceRoom = (): React.JSX.Element => {
 
 		DeviceEventEmitter.addListener('onJoin', async (data: any) => {
 			console.log('onJoin', data)
-			await VoiceRoomModule.setAuthorizeToken(`Bearer ${token}`)
+			await VoiceRoomModule.setAuthorizeToken(token)
 			setMessageList((prev) => {
 				prev.push({
 					id: Date.now() + '',
@@ -137,11 +137,14 @@ const VoiceRoom = (): React.JSX.Element => {
 					prev[pos].userInfo = undefined
 					return [...prev]
 				})
-				EventEmitter.emit(LISTENER, {message: leaveMicRes.msg})
+				EventEmitter.emit(LISTENER, { message: leaveMicRes.msg })
 			}
 		} else {
 			console.log('调用joinMic')
-			const joinMicRes = await VoiceRoomModule.joinMic(roomId, { micIndex: pos, microphoneSwitch: false })
+			const joinMicRes = await VoiceRoomModule.joinMic(roomId, {
+				micIndex: pos,
+				microphoneSwitch: false
+			})
 			if (joinMicRes.result) {
 				setIsOnSeat(true)
 				setSeats((prev) => {
@@ -149,9 +152,9 @@ const VoiceRoom = (): React.JSX.Element => {
 					prev[pos].userInfo = userInfo
 					return [...prev]
 				})
-				EventEmitter.emit(LISTENER, {message: joinMicRes.msg})
+				EventEmitter.emit(LISTENER, { message: joinMicRes.msg })
 			} else {
-				EventEmitter.emit(LISTENER, {message: joinMicRes.msg})
+				EventEmitter.emit(LISTENER, { message: joinMicRes.msg })
 			}
 		}
 	}

@@ -63,6 +63,7 @@ const Test = (): React.JSX.Element => {
 		const res = (await getUserInfoApi()) as IResponse<any>
 		if (res.success) {
 			dispatch(setUser({ userInfo: res.object }))
+			await VoiceRoomModule.setAuthorizeToken(token)
 		}
 	}
 
