@@ -23,6 +23,9 @@ import Icon from '../../components/Icon'
 import MessageBox from './components/MessageBox'
 import GameSwiper from './components/GameSwiper'
 import MessageInput from './components/MessageInput'
+import { initialSeats } from './config'
+import { LISTENER } from '../../components/Toast';
+import EventEmitter from '../../utils/emitter'
 
 export type VoiceRoomParams = {
 	key: string
@@ -35,6 +38,8 @@ const VoiceRoom = (): React.JSX.Element => {
 
 	const userInfo = useSelector((state: any) => state.user.userInfo)
 
+	const token = useSelector((state: any) => state.app.token)
+
 	const { params } = useRoute<VoiceRoomParams>()
 
 	const { coverImg, subject: roomName, aliRoomId: roomId, heatValue } = params
@@ -45,7 +50,7 @@ const VoiceRoom = (): React.JSX.Element => {
 
 	const [audiences, setAudiences] = useState<Array<any>>([])
 
-	const [seats, setSeats] = useState<Array<SeatInfo>>()
+	const [seats, setSeats] = useState<Array<SeatInfo>>(initialSeats)
 
 	const [messageList, setMessageList] = useState<Array<TMessage>>([])
 
@@ -70,14 +75,29 @@ const VoiceRoom = (): React.JSX.Element => {
 	const joinRoomHandle = async () => {
 		console.log('joinRoomHandle')
 
-		DeviceEventEmitter.addListener('onJoin', (data: any) => {
+		DeviceEventEmitter.addListener('onJoin', async (data: any) => {
 			console.log('onJoin', data)
+			await VoiceRoomModule.setAuthorizeToken(`Bearer ${token}`)
+			setMessageList((prev) => {
+				prev.push({
+					id: Date.now() + '',
+					type: 'system',
+					content: `${data.roomId} 进入房间`
+				})
+				return [...prev]
+			})
 		})
 		DeviceEventEmitter.addListener('onJoinedRoom', (data: any) => {
 			console.log('onJoinedRoom', data)
 		})
 		DeviceEventEmitter.addListener('onLeave', (data: any) => {
 			console.log('onLeave', data)
+		})
+		DeviceEventEmitter.addListener('onJoinedMic', (data: any) => {
+			console.log('onJoinedMic', data)
+		})
+		DeviceEventEmitter.addListener('onLeavedMic', (data: any) => {
+			console.log('onLeavedMic', data)
 		})
 
 		const joinRoomRes = await VoiceRoomModule.joinRoom(roomId)
@@ -98,11 +118,43 @@ const VoiceRoom = (): React.JSX.Element => {
 			DeviceEventEmitter.removeAllListeners('onJoin')
 			DeviceEventEmitter.removeAllListeners('onJoinedRoom')
 			DeviceEventEmitter.removeAllListeners('onLeave')
+			DeviceEventEmitter.removeAllListeners('onJoinedMic')
+			DeviceEventEmitter.removeAllListeners('onLeavedMic')
 			Navigation.back()
 		}
 	}
 
 	const masterSeatHandle = () => {}
+
+	const otherSeatHandle = async (pos: number) => {
+		if (isOnSeat) {
+			console.log('调用leaveMic')
+			const leaveMicRes = await VoiceRoomModule.leaveMic(roomId)
+			if (leaveMicRes.result) {
+				setIsOnSeat(false)
+				setSeats((prev) => {
+					prev[pos].isUsed = false
+					prev[pos].userInfo = undefined
+					return [...prev]
+				})
+				EventEmitter.emit(LISTENER, {message: leaveMicRes.msg})
+			}
+		} else {
+			console.log('调用joinMic')
+			const joinMicRes = await VoiceRoomModule.joinMic(roomId, { micIndex: pos, microphoneSwitch: false })
+			if (joinMicRes.result) {
+				setIsOnSeat(true)
+				setSeats((prev) => {
+					prev[pos].isUsed = true
+					prev[pos].userInfo = userInfo
+					return [...prev]
+				})
+				EventEmitter.emit(LISTENER, {message: joinMicRes.msg})
+			} else {
+				EventEmitter.emit(LISTENER, {message: joinMicRes.msg})
+			}
+		}
+	}
 
 	const renderHeaderAvatar = () => {
 		return audiences.map((item, index) => {})
@@ -206,19 +258,25 @@ const VoiceRoom = (): React.JSX.Element => {
 						className="w-full flex flex-row items-center justify-center"
 						style={{ marginTop: 15 }}
 					>
-						<Seat isMaster={true} onPress={masterSeatHandle} />
+						<Seat isMaster={true} onPress={() => masterSeatHandle} />
 					</View>
 					{/* other-avatar */}
 					<View
 						className="w-full flex flex-row items-center justify-center flex-wrap"
 						style={{ marginTop: 18, height: 200 }}
 					>
-						{[1, 2, 3, 4, 5, 6, 7, 8].map((item) => {
+						{seats.map((item) => {
 							return (
 								<Seat
 									style={{ flexBasis: '25%', flexShrink: 0, alignItems: 'center', marginTop: 6 }}
-									seatNumber={item}
-									key={item}
+									seatNumber={item.seatNumber}
+									key={item.seatNumber}
+									userInfo={item.userInfo}
+									isLocked={item.isLocked}
+									isMaster={false}
+									isMuted={item.isMuted}
+									isUsed={item.isUsed}
+									onPress={() => otherSeatHandle(item.seatNumber!)}
 								/>
 							)
 						})}

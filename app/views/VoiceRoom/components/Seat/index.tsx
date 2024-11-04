@@ -7,7 +7,7 @@ import Icon from '../../../../components/Icon'
 interface SeatProps extends SeatInfo {
 	isMaster?: boolean
 	style?: StyleProp<ViewStyle>
-	onPress?: () => void
+	onPress?: () => void;
 }
 
 const Seat = (props: SeatProps): React.JSX.Element => {

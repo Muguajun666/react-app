@@ -7,6 +7,8 @@ import com.alivc.auimessage.model.token.IMNewTokenAuth;
 import com.alivc.rtc.AliRtcEngine;
 import com.aliyun.auikits.biz.voiceroom.VoiceRoomServerConstant;
 import com.aliyun.auikits.rtc.ClientMode;
+import com.aliyun.auikits.single.Singleton;
+import com.aliyun.auikits.single.server.Server;
 import com.aliyun.auikits.voice.ARTCVoiceRoomEngineDelegate;
 import com.aliyun.auikits.voiceroom.callback.ActionCallback;
 import com.aliyun.auikits.voiceroom.external.RtcInfo;
@@ -28,6 +30,7 @@ import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.bridge.WritableNativeMap;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
 
+import java.lang.ref.WeakReference;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -55,6 +58,15 @@ public class VoiceRoomModule extends ReactContextBaseJavaModule {
     }
 
     @ReactMethod
+    public void setAuthorizeToken(String authorization, Promise promise) {
+        System.out.println("---------authorization----------");
+//        System.out.println(authorization);
+        System.out.println("Bearer " + this.rtcInfo.token);
+        Singleton.getInstance(Server.class).setAuthorizeToken("Bearer " + this.rtcInfo.token);
+        promise.resolve(null);
+    }
+
+    @ReactMethod
     public void createVoiceRoom(ReadableMap baseUserInfo, ReadableMap baseImInfo, ReadableMap baseRtcInfo, ReadableMap baseRoomInfo, Promise promise) {
         WritableMap response = new WritableNativeMap();
         try {
@@ -67,7 +79,6 @@ public class VoiceRoomModule extends ReactContextBaseJavaModule {
                 voiceRoom = AUIVoiceRoomFactory.createVoiceRoom();
                 System.out.println("新建房间实例");
             }
-
             // 构建 UserInfo
             UserInfo userInfo = new UserInfo(baseUserInfo.getString("id"), baseUserInfo.getString("id"));
             userInfo.avatarUrl = baseUserInfo.isNull("avatar") ? "null" : baseUserInfo.getString("avatar");
@@ -145,7 +156,6 @@ public class VoiceRoomModule extends ReactContextBaseJavaModule {
 
     @ReactMethod
     public void joinRoom(String aliRoomId, Promise promise) {
-        System.out.println("joinRoom");
         WritableMap response = new WritableNativeMap();
         ReactContext reactContext = getReactApplicationContext();
         ARTCVoiceRoomEngine voiceRoom = roomMap.get(aliRoomId);
@@ -236,6 +246,88 @@ public class VoiceRoomModule extends ReactContextBaseJavaModule {
             System.out.println("房间实例不存在");
             promise.resolve(false);
         }
+    }
+
+    @ReactMethod
+    public void joinMic(String aliRoomId, ReadableMap baseMicInfo, Promise promise) {
+        WritableMap response = new WritableNativeMap();
+        ReactContext reactContext = getReactApplicationContext();
+        ARTCVoiceRoomEngine voiceRoom = roomMap.get(aliRoomId);
+        Boolean microphoneSwitch = baseMicInfo.getBoolean("microphoneSwitch");
+        int micIndex = baseMicInfo.getInt("micIndex");
+
+        VoiceRoomObserver roomObserver = new VoiceRoomObserver() {
+            @Override
+            public void onResponseMic(MicRequestResult rs) {
+                System.out.println(rs.micPosition);
+                MicInfo micInfo = new MicInfo(rs.micPosition, !microphoneSwitch);
+                final WeakReference<VoiceRoomObserver> tempVoiceRoomObserver = new WeakReference<>(this);
+                voiceRoom.joinMic(micInfo, new ActionCallback() {
+                    @Override
+                    public void onResult(int code, String msg, Map<String, Object> params) {
+                        System.out.println("--------------joinMic-------------");
+                        System.out.println(code);
+                        System.out.println(msg);
+                        System.out.println(params);
+                        System.out.println("--------------joinMic-------------");
+                        if(code != 0) {
+                            if(tempVoiceRoomObserver.get() != null) {
+                                voiceRoom.removeObserver(tempVoiceRoomObserver.get());
+                            }
+                        }
+                    }
+                });
+            }
+        };
+
+        voiceRoom.addObserver(roomObserver);
+        voiceRoom.requestMic(micIndex, new ActionCallback() {
+            @Override
+            public void onResult(int code, String msg, Map<String, Object> params) {
+                System.out.println("--------------requestMic-------------");
+                System.out.println(code);
+                System.out.println(msg);
+                System.out.println(params);
+                System.out.println("--------------requestMic-------------");
+                if (code != 0) {
+//                    voiceRoom.removeObserver(roomObserver);
+                    response.putBoolean("result",false);
+                    response.putString("msg","请求上麦失败");
+                    promise.resolve(response);
+                } else {
+                    response.putBoolean("result",true);
+                    response.putString("msg","请求上麦成功");
+                    promise.resolve(response);
+                }
+            }
+        });
+    }
+
+    @ReactMethod
+    public void leaveMic(String aliRoomId, Promise promise) {
+        WritableMap response = new WritableNativeMap();
+        ReactContext reactContext = getReactApplicationContext();
+        ARTCVoiceRoomEngine voiceRoom = roomMap.get(aliRoomId);
+
+        voiceRoom.leaveMic(new ActionCallback() {
+            @Override
+            public void onResult(int code, String msg, Map<String, Object> params) {
+                System.out.println("--------------leaveMic-------------");
+                System.out.println(code);
+                System.out.println(msg);
+                System.out.println(params);
+                System.out.println("--------------leaveMic-------------");
+                if (code == 0) {
+                    response.putBoolean("result",true);
+                    response.putString("msg","下麦成功");
+                    promise.resolve(response);
+                } else {
+                    response.putBoolean("result",false);
+                    response.putString("msg","下麦失败");
+                    promise.resolve(response);
+                }
+            }
+        });
     }
 
     @ReactMethod(isBlockingSynchronousMethod = true)

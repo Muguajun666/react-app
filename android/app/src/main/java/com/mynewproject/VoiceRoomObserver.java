@@ -8,7 +8,7 @@ import com.aliyun.auikits.voiceroom.bean.UserInfo;
 
 import java.util.List;
 
-public abstract class VoiceRoomObserver implements ARTCVoiceRoomEngineDelegate {
+public class VoiceRoomObserver implements ARTCVoiceRoomEngineDelegate {
 
     @Override
     public void onJoin(String roomId, String uid) {}

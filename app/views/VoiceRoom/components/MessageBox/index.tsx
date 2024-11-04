@@ -17,10 +17,10 @@ const MessageBox = (props: MessageBoxProps): React.JSX.Element => {
 		let renderItem: React.JSX.Element | null = null
 
 		if (type === 'system') {
-			renderItem = <Text style={[styles.textWrapper, styles.systemMessage]}>{content}</Text>
+			renderItem = <Text style={[styles.textWrapper, styles.systemMessage]} key={id}>{content}</Text>
 		} else if (type === 'user') {
 			renderItem = (
-				<View style={[styles.userMessageWrapper, styles.textWrapper]}>
+				<View style={[styles.userMessageWrapper, styles.textWrapper]} key={id}>
 					<Avatar alt="Avatar" style={styles.avatar}>
 						<AvatarImage
 							source={
