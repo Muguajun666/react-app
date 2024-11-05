@@ -133,8 +133,8 @@ const VoiceRoom = (): React.JSX.Element => {
 			if (leaveMicRes.result) {
 				setIsOnSeat(false)
 				setSeats((prev) => {
-					prev[pos].isUsed = false
-					prev[pos].userInfo = undefined
+					prev[pos - 1].isUsed = false
+					prev[pos - 1].userInfo = undefined
 					return [...prev]
 				})
 				EventEmitter.emit(LISTENER, { message: leaveMicRes.msg })
@@ -148,8 +148,8 @@ const VoiceRoom = (): React.JSX.Element => {
 			if (joinMicRes.result) {
 				setIsOnSeat(true)
 				setSeats((prev) => {
-					prev[pos].isUsed = true
-					prev[pos].userInfo = userInfo
+					prev[pos - 1].isUsed = true
+					prev[pos - 1].userInfo = userInfo
 					return [...prev]
 				})
 				EventEmitter.emit(LISTENER, { message: joinMicRes.msg })

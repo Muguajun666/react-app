@@ -2,13 +2,6 @@ import { SeatInfo } from "./type";
 
 export const initialSeats: SeatInfo[] = [
   {
-    seatNumber: 0,
-    isUsed: false,
-    isLocked: false,
-    isMuted: false,
-    userInfo: undefined
-  },
-  {
     seatNumber: 1,
     isUsed: false,
     isLocked: false,
@@ -41,17 +34,24 @@ export const initialSeats: SeatInfo[] = [
     isUsed: false,
     isLocked: false,
     isMuted: false,
-    userInfo: undefined,
+    userInfo: undefined
   },
   {
     seatNumber: 6,
     isUsed: false,
     isLocked: false,
     isMuted: false,
-    userInfo: undefined
+    userInfo: undefined,
   },
   {
     seatNumber: 7,
+    isUsed: false,
+    isLocked: false,
+    isMuted: false,
+    userInfo: undefined
+  },
+  {
+    seatNumber: 8,
     isUsed: false,
     isLocked: false,
     isMuted: false,
