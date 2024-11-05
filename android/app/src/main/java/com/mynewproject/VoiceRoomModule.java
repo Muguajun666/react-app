@@ -2,6 +2,7 @@ package com.mynewproject;
 
 import androidx.annotation.NonNull;
 
+import com.alibaba.fastjson.JSON;
 import com.alivc.auimessage.model.token.IMNewToken;
 import com.alivc.auimessage.model.token.IMNewTokenAuth;
 import com.alivc.rtc.AliRtcEngine;
@@ -26,6 +27,7 @@ import com.facebook.react.bridge.Arguments;
 import com.aliyun.auikits.voiceroom.bean.*;
 import com.aliyun.auikits.voiceroom.factory.AUIVoiceRoomFactory;
 import com.aliyun.auikits.voice.ARTCVoiceRoomEngine;
+import com.facebook.react.bridge.WritableArray;
 import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.bridge.WritableNativeMap;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
@@ -57,6 +59,7 @@ public class VoiceRoomModule extends ReactContextBaseJavaModule {
         return "VoiceRoomModule";
     }
 
+    // 设置授权token
     @ReactMethod
     public void setAuthorizeToken(String authorization, Promise promise) {
         System.out.println("---------authorization----------");
@@ -65,6 +68,7 @@ public class VoiceRoomModule extends ReactContextBaseJavaModule {
         promise.resolve(null);
     }
 
+    // 创建房间实例
     @ReactMethod
     public void createVoiceRoom(ReadableMap baseUserInfo, ReadableMap baseImInfo, ReadableMap baseRtcInfo, ReadableMap baseRoomInfo, Promise promise) {
         WritableMap response = new WritableNativeMap();
@@ -153,6 +157,7 @@ public class VoiceRoomModule extends ReactContextBaseJavaModule {
         }
     }
 
+    // 加入房间
     @ReactMethod
     public void joinRoom(String aliRoomId, Promise promise) {
         WritableMap response = new WritableNativeMap();
@@ -193,15 +198,25 @@ public class VoiceRoomModule extends ReactContextBaseJavaModule {
 
             @Override
             public void onJoinedRoom(UserInfo userInfo) {
-                WritableMap params = Arguments.createMap();
-                params.putString("userName", userInfo.userName);
-                params.putString("avatarUrl", userInfo.avatarUrl);
-                reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit("onJoinedRoom", params);
+                String jsonUserInfo = JSON.toJSONString(userInfo);
+                reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit("onJoinedRoom", jsonUserInfo);
             }
 
             @Override
             public void onLeave() {
                 reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit("onLeave", null);
+            }
+
+            @Override
+            public void onJoinedMic(UserInfo userInfo) {
+                String jsonUserInfo = JSON.toJSONString(userInfo);
+                reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit("onJoinedMic", jsonUserInfo);
+            }
+
+            @Override
+            public void onLeavedMic(UserInfo userInfo) {
+                String jsonUserInfo = JSON.toJSONString(userInfo);
+                reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit("onLeavedMic", jsonUserInfo);
             }
         };
 
@@ -211,6 +226,7 @@ public class VoiceRoomModule extends ReactContextBaseJavaModule {
         voiceRoom.joinRoom(this.roomInfo, this.rtcInfo, joinRoomCallback);
     }
 
+    // 离开房间
     @ReactMethod
     public void leaveRoom(String aliRoomId, Promise promise) {
         ARTCVoiceRoomEngine voiceRoom = roomMap.get(aliRoomId);
@@ -247,6 +263,36 @@ public class VoiceRoomModule extends ReactContextBaseJavaModule {
         }
     }
 
+    // 获取麦位信息
+    @ReactMethod
+    public void getMicInfoList(String aliRoomId, Promise promise) {
+        ARTCVoiceRoomEngine voiceRoom = roomMap.get(aliRoomId);
+        ReactContext reactContext = getReactApplicationContext();
+
+        VoiceRoomObserver roomObserver = new VoiceRoomObserver() {
+            @Override
+            public void onRoomMicListChanged(List<UserInfo> micUsers) {
+                String jsonMicUsers = JSON.toJSONString(micUsers);
+                reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit("onRoomMicListChanged", jsonMicUsers);
+                final WeakReference<VoiceRoomObserver> tempVoiceRoomObserver = new WeakReference<>(this);
+                voiceRoom.removeObserver(tempVoiceRoomObserver.get());
+                promise.resolve(null);
+            }
+        };
+
+        voiceRoom.addObserver(roomObserver);
+        voiceRoom.listMicUserList(new ActionCallback() {
+            @Override
+            public void onResult(int code, String msg, Map<String, Object> params) {
+                if (code != 0) {
+                    voiceRoom.removeObserver(roomObserver);
+                    promise.resolve(null);
+                }
+            }
+        });
+    }
+
+    // 上麦
     @ReactMethod
     public void joinMic(String aliRoomId, ReadableMap baseMicInfo, Promise promise) {
         WritableMap response = new WritableNativeMap();
@@ -269,10 +315,8 @@ public class VoiceRoomModule extends ReactContextBaseJavaModule {
                         System.out.println(msg);
                         System.out.println(params);
                         System.out.println("--------------joinMic-------------");
-                        if(code != 0) {
-                            if(tempVoiceRoomObserver.get() != null) {
-                                voiceRoom.removeObserver(tempVoiceRoomObserver.get());
-                            }
+                        if(tempVoiceRoomObserver.get() != null) {
+                            voiceRoom.removeObserver(tempVoiceRoomObserver.get());
                         }
                     }
                 });
@@ -302,6 +346,7 @@ public class VoiceRoomModule extends ReactContextBaseJavaModule {
         });
     }
 
+    // 下麦
     @ReactMethod
     public void leaveMic(String aliRoomId, Promise promise) {
         WritableMap response = new WritableNativeMap();

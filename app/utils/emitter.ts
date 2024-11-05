@@ -31,7 +31,7 @@ class EventEmitter {
 				try {
 					listener.apply(this, args);
 				} catch (e) {
-					console.log(e);
+					console.log('e', e);
 				}
 			});
 		}

@@ -77,7 +77,11 @@ const VoiceRoom = (): React.JSX.Element => {
 
 		DeviceEventEmitter.addListener('onJoin', async (data: any) => {
 			console.log('onJoin', data)
+			// 设置鉴权信息
 			await VoiceRoomModule.setAuthorizeToken(token)
+			// 获取麦位信息
+			await VoiceRoomModule.getMicInfoList(roomId)
+			// 添加消息
 			setMessageList((prev) => {
 				prev.push({
 					id: Date.now() + '',
@@ -99,7 +103,12 @@ const VoiceRoom = (): React.JSX.Element => {
 		DeviceEventEmitter.addListener('onLeavedMic', (data: any) => {
 			console.log('onLeavedMic', data)
 		})
-
+		DeviceEventEmitter.addListener('onRoomMicListChanged', (data: string) => {
+			// 获取房间麦位信息列表
+			const micUserList = JSON.parse(data)
+			console.log('onRoomMicListChanged', micUserList)
+			handleSeats(micUserList)
+		})
 		const joinRoomRes = await VoiceRoomModule.joinRoom(roomId)
 		const { result, msg } = joinRoomRes
 		console.log('joinRoomRes', result, msg)
@@ -108,6 +117,32 @@ const VoiceRoom = (): React.JSX.Element => {
 		} else {
 			Navigation.back()
 		}
+	}
+
+	const handleSeats = (micUserList: Array<any>) => {
+		const newSeats = seats.map((item: SeatInfo) => {
+			const micUser = micUserList.find((user: any) => user.micPosition === item.seatNumber)
+			if (micUser) {
+				const {avatarUrl, isMute, userId, userName} = micUser
+				return {
+					...item,
+					isUsed: true,
+					isMuted: isMute,
+					userInfo: {
+						avatar: avatarUrl === 'null' ? null : avatarUrl,
+						userId,
+						userName
+					}
+				}
+			} else {
+				return {
+					...item,
+					isUsed: false,
+					userInfo: undefined
+				}
+			}
+		})
+		setSeats([...newSeats])
 	}
 
 	const backHandle = async () => {
@@ -120,6 +155,8 @@ const VoiceRoom = (): React.JSX.Element => {
 			DeviceEventEmitter.removeAllListeners('onLeave')
 			DeviceEventEmitter.removeAllListeners('onJoinedMic')
 			DeviceEventEmitter.removeAllListeners('onLeavedMic')
+			DeviceEventEmitter.removeAllListeners('onRoomMicListChanged')
+
 			Navigation.back()
 		}
 	}
@@ -128,7 +165,6 @@ const VoiceRoom = (): React.JSX.Element => {
 
 	const otherSeatHandle = async (pos: number) => {
 		if (isOnSeat) {
-			console.log('调用leaveMic')
 			const leaveMicRes = await VoiceRoomModule.leaveMic(roomId)
 			if (leaveMicRes.result) {
 				setIsOnSeat(false)
@@ -140,7 +176,6 @@ const VoiceRoom = (): React.JSX.Element => {
 				EventEmitter.emit(LISTENER, { message: leaveMicRes.msg })
 			}
 		} else {
-			console.log('调用joinMic')
 			const joinMicRes = await VoiceRoomModule.joinMic(roomId, {
 				micIndex: pos,
 				microphoneSwitch: false

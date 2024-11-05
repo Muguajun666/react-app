@@ -36,7 +36,7 @@ const Toast = (): React.ReactElement => {
 
 	const showToast = ({ message }: { message: string }) => {
 		if (toast && toast.show) {
-			toast.show(message, 1000);
+			toast.show(message, 500);
 		}
 	};
 
