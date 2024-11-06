@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { TRoomListItem } from '../../services/type'
 import {
 	Button,
@@ -21,12 +21,14 @@ import Navigation from '../../navigation/appNavigation'
 import { MIC_HANDLE_TYPE, SeatInfo, TGameInfo, TMessage } from './type'
 import Seat from './components/Seat'
 import Icon from '../../components/Icon'
+import BottomSheetComponent from '../../components/BottomSheet'
 import MessageBox from './components/MessageBox'
 import GameSwiper from './components/GameSwiper'
 import MessageInput from './components/MessageInput'
 import { initialSeats } from './config'
 import { LISTENER } from '../../components/Toast'
 import EventEmitter from '../../utils/emitter'
+import BottomSheet from '@gorhom/bottom-sheet'
 
 export type VoiceRoomParams = {
 	key: string
@@ -42,6 +44,8 @@ const VoiceRoom = (): React.JSX.Element => {
 	const token = useSelector((state: any) => state.app.token)
 
 	const messageBoxRef = useRef<ScrollView>(null)
+
+	const bottomSheetRef = useRef<BottomSheet>(null)
 
 	const { params } = useRoute<VoiceRoomParams>()
 
@@ -265,7 +269,8 @@ const VoiceRoom = (): React.JSX.Element => {
 		if (isOnSeat) {
 			if (seats[pos - 1].userInfo?.userId === userInfo.id) {
 				// 自己的麦位 下麦
-				await VoiceRoomModule.leaveMic(roomId)
+				// await VoiceRoomModule.leaveMic(roomId)
+				bottomSheetRef.current?.expand()
 			} else {
 				EventEmitter.emit(LISTENER, { message: '已在麦位上' })
 			}
@@ -281,8 +286,7 @@ const VoiceRoom = (): React.JSX.Element => {
 		}
 	}
 
-	const renderHeaderAvatar = () => {
-	}
+	const renderHeaderAvatar = () => {}
 
 	const microphoneHandle = () => {
 		if (!isOnSeat) return
@@ -443,8 +447,13 @@ const VoiceRoom = (): React.JSX.Element => {
 							</Pressable>
 						)}
 					</View>
+					<BottomSheetComponent ref={bottomSheetRef}>
+						<Text>Awesome 🔥</Text>
+					</BottomSheetComponent>
 				</View>
-			) : <ActivityIndicator size="large" animating={!isJoin} className="mt-12" />}
+			) : (
+				<ActivityIndicator size="large" animating={!isJoin} className="mt-12" />
+			)}
 		</>
 	)
 }
@@ -464,6 +473,11 @@ const styles = StyleSheet.create({
 	roomId: {
 		color: '#fff',
 		fontSize: 10
+	},
+	contentContainer: {
+		flex: 1,
+		padding: 36,
+		alignItems: 'center'
 	}
 })
 
