@@ -2,13 +2,14 @@ import { FlatList, ScrollView, StyleProp, StyleSheet, Text, TextInput, View, Vie
 import { TMessage } from '../../type'
 import { Avatar, AvatarFallback, AvatarImage } from '../../../../components/ui/avatar'
 import { IMG_BASE_URL } from '@env'
+import { forwardRef } from 'react'
 
 interface MessageBoxProps {
 	style?: StyleProp<ViewStyle>
 	messageList?: TMessage[]
 }
 
-const MessageBox = (props: MessageBoxProps): React.JSX.Element => {
+const MessageBox = forwardRef<ScrollView, MessageBoxProps>((props, ref) => {
 	const { style, messageList = [] } = props
 
 	const renderMessageItem = (message: TMessage, index: number) => {
@@ -43,12 +44,12 @@ const MessageBox = (props: MessageBoxProps): React.JSX.Element => {
 	}
 
 	return (
-		<ScrollView style={[style, { gap: 100 }]}>
+		<ScrollView ref={ref} style={[style, { gap: 100 }]}>
 			{messageList.map((item, index) => renderMessageItem(item, index))}
 		</ScrollView>
 	)
 }
-
+)
 const styles = StyleSheet.create({
 	textWrapper: {
 		padding: 6,

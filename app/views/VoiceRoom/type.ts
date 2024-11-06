@@ -25,3 +25,8 @@ export type TGameInfo = {
 	entry?: string
 	icon?: string
 }
+
+export enum MIC_HANDLE_TYPE {
+	JOIN = 'join',
+	LEAVE = 'leave'
+}

@@ -1,6 +1,7 @@
 import { Pressable, StyleProp, StyleSheet, Text, TextInput, View, ViewStyle } from 'react-native'
 import { Input } from '../../../../components/ui/input'
 import Icon from '../../../../components/Icon'
+import React from 'react'
 
 interface MessageInputProps {
 	style?: StyleProp<ViewStyle>
@@ -10,9 +11,25 @@ interface MessageInputProps {
 const MessageInput = (props: MessageInputProps): React.JSX.Element => {
 	const { style, onInput } = props
 
+	const [value, setValue] = React.useState('')
+
+	const onChangeText = (text: string) => {
+		setValue(text)
+	}
+
 	return (
 		<View style={styles.inputWrapper}>
-			<Input style={styles.input} placeholder="Say Something..." placeholderTextColor={'#fff'}/>
+			<Input
+				style={styles.input}
+				placeholder="Say Something..."
+				placeholderTextColor={'#fff'}
+				value={value}
+				onChangeText={onChangeText}
+				onSubmitEditing={() => {
+					onInput && onInput(value)
+					setValue('')
+				}}
+			/>
 			<Pressable onPress={() => console.log('emoji')}>
 				<Icon
 					iconFamily="SimpleLineIcons"

@@ -203,6 +203,12 @@ public class VoiceRoomModule extends ReactContextBaseJavaModule {
             }
 
             @Override
+            public void onLeavedRoom(UserInfo userInfo) {
+                String jsonUserInfo = JSON.toJSONString(userInfo);
+                reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit("onLeavedRoom", jsonUserInfo);
+            }
+
+            @Override
             public void onLeave() {
                 reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit("onLeave", null);
             }
@@ -217,6 +223,20 @@ public class VoiceRoomModule extends ReactContextBaseJavaModule {
             public void onLeavedMic(UserInfo userInfo) {
                 String jsonUserInfo = JSON.toJSONString(userInfo);
                 reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit("onLeavedMic", jsonUserInfo);
+            }
+
+            @Override
+            public void onReceivedTextMessage(UserInfo userInfo, String text) {
+                WritableMap params = Arguments.createMap();
+                String jsonUserInfo = JSON.toJSONString(userInfo);
+                params.putString("jsonUserInfo", jsonUserInfo);
+                params.putString("text", text);
+                reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit("onReceivedTextMessage", params);
+            }
+
+            @Override
+            public void onMemberCountChanged(int count) {
+                reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit("onMemberCountChanged", count);
             }
         };
 
@@ -292,10 +312,27 @@ public class VoiceRoomModule extends ReactContextBaseJavaModule {
         });
     }
 
-    // 上麦
+    // 直接上麦
+    @ReactMethod
+    public void joinMicDirect(String aliRoomId, int micPosition, Promise promise) {
+        ARTCVoiceRoomEngine voiceRoom = roomMap.get(aliRoomId);
+        MicInfo micInfo = new MicInfo(micPosition, false);
+        voiceRoom.joinMic(micInfo, new ActionCallback() {
+            @Override
+            public void onResult(int code, String msg, Map<String, Object> params) {
+                System.out.println("--------------joinMicDirect-------------");
+                System.out.println(code);
+                System.out.println(msg);
+                System.out.println(params);
+                System.out.println("--------------joinMicDirect-------------");
+                promise.resolve(null);
+            }
+        });
+    }
+
+    // 请求上麦
     @ReactMethod
     public void joinMic(String aliRoomId, ReadableMap baseMicInfo, Promise promise) {
-        WritableMap response = new WritableNativeMap();
         ReactContext reactContext = getReactApplicationContext();
         ARTCVoiceRoomEngine voiceRoom = roomMap.get(aliRoomId);
         Boolean microphoneSwitch = baseMicInfo.getBoolean("microphoneSwitch");
@@ -304,7 +341,6 @@ public class VoiceRoomModule extends ReactContextBaseJavaModule {
         VoiceRoomObserver roomObserver = new VoiceRoomObserver() {
             @Override
             public void onResponseMic(MicRequestResult rs) {
-                System.out.println(rs.micPosition);
                 MicInfo micInfo = new MicInfo(rs.micPosition, !microphoneSwitch);
                 final WeakReference<VoiceRoomObserver> tempVoiceRoomObserver = new WeakReference<>(this);
                 voiceRoom.joinMic(micInfo, new ActionCallback() {
@@ -333,15 +369,9 @@ public class VoiceRoomModule extends ReactContextBaseJavaModule {
                 System.out.println(params);
                 System.out.println("--------------requestMic-------------");
                 if (code != 0) {
-//                    voiceRoom.removeObserver(roomObserver);
-                    response.putBoolean("result",false);
-                    response.putString("msg","请求上麦失败");
-                    promise.resolve(response);
-                } else {
-                    response.putBoolean("result",true);
-                    response.putString("msg","请求上麦成功");
-                    promise.resolve(response);
+                    voiceRoom.removeObserver(roomObserver);
                 }
+                promise.resolve(null);
             }
         });
     }
@@ -349,7 +379,6 @@ public class VoiceRoomModule extends ReactContextBaseJavaModule {
     // 下麦
     @ReactMethod
     public void leaveMic(String aliRoomId, Promise promise) {
-        WritableMap response = new WritableNativeMap();
         ReactContext reactContext = getReactApplicationContext();
         ARTCVoiceRoomEngine voiceRoom = roomMap.get(aliRoomId);
 
@@ -361,15 +390,24 @@ public class VoiceRoomModule extends ReactContextBaseJavaModule {
                 System.out.println(msg);
                 System.out.println(params);
                 System.out.println("--------------leaveMic-------------");
-                if (code == 0) {
-                    response.putBoolean("result",true);
-                    response.putString("msg","下麦成功");
-                    promise.resolve(response);
-                } else {
-                    response.putBoolean("result",false);
-                    response.putString("msg","下麦失败");
-                    promise.resolve(response);
-                }
+                promise.resolve(null);
+            }
+        });
+    }
+
+    // 发送消息
+    @ReactMethod
+    public void sendMessage(String aliRoomId, String message , Promise promise) {
+        ARTCVoiceRoomEngine voiceRoom = roomMap.get(aliRoomId);
+        voiceRoom.sendTextMessage(message, new ActionCallback() {
+            @Override
+            public void onResult(int code, String msg, Map<String, Object> params) {
+                System.out.println("--------------sendMessage-------------");
+                System.out.println(code);
+                System.out.println(msg);
+                System.out.println(params);
+                System.out.println("--------------sendMessage-------------");
+                promise.resolve(null);
             }
         });
     }

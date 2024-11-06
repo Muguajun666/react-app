@@ -5,13 +5,14 @@ import { IMG_BASE_URL } from '@env'
 import Icon from '../../../../components/Icon'
 
 interface SeatProps extends SeatInfo {
+	uid?: string
 	isMaster?: boolean
 	style?: StyleProp<ViewStyle>
 	onPress?: () => void;
 }
 
 const Seat = (props: SeatProps): React.JSX.Element => {
-	const { isMaster, style, userInfo, seatNumber, isUsed, isLocked, isMuted, onPress } =
+	const { uid, isMaster, style, userInfo, seatNumber, isUsed, isLocked, isMuted, onPress } =
 		props
 
 	return (
@@ -44,7 +45,7 @@ const Seat = (props: SeatProps): React.JSX.Element => {
 				</View>
 			) : (
 				<View>
-					<Avatar alt="Avatar" style={[styles.seatSize, isUsed && styles.otherBorder]}>
+					<Avatar alt="Avatar" style={[styles.seatSize, isUsed && styles.otherBorder, uid === userInfo?.userId && styles.currentBorder]}>
 						<>
 							{isUsed ? (
 								<AvatarImage
@@ -65,7 +66,7 @@ const Seat = (props: SeatProps): React.JSX.Element => {
 							)}
 						</>
 					</Avatar>
-					<Text style={styles.userText}>{`No.${seatNumber}`}</Text>
+					<Text style={styles.userText} numberOfLines={1} ellipsizeMode="tail">{isUsed ? userInfo?.userName :`No.${seatNumber}`}</Text>
           {isUsed && (
 						<View style={styles.microphone}>
 							<Image style={{ width: 14, height: 14}} source={isMuted ? require('../../../../assets/images/microphone-slash.png') : require('../../../../assets/images/microphone.png')} />
@@ -90,12 +91,17 @@ const styles = StyleSheet.create({
 		borderWidth: 2,
 		borderColor: '#AA4EFFFF'
 	},
+	currentBorder: {
+		borderWidth: 2,
+		borderColor: '#f93737FF'
+	},
 	userText: {
 		fontSize: 12,
 		color: '#fff',
 		textAlign: 'center',
 		marginTop: 4,
-		fontWeight: 400
+		fontWeight: 400,
+		width: 64,
 	},
 	userLeave: {
 		backgroundColor: 'rgba(255, 255, 255, 0.3)'

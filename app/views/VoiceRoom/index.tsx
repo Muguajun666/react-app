@@ -1,4 +1,4 @@
-import { PropsWithChildren, forwardRef, useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { TRoomListItem } from '../../services/type'
 import {
 	Button,
@@ -9,15 +9,16 @@ import {
 	Text,
 	View,
 	NativeModules,
-	DeviceEventEmitter
+	DeviceEventEmitter,
+	ActivityIndicator
 } from 'react-native'
-import { RouteProp, useRoute } from '@react-navigation/native'
+import { useRoute } from '@react-navigation/native'
 import { BlurView } from '@react-native-community/blur'
 import { IMG_BASE_URL } from '@env'
 import { useSelector } from 'react-redux'
-import { Avatar, AvatarFallback, AvatarImage } from '../../components/ui/avatar'
+import { Avatar, AvatarImage } from '../../components/ui/avatar'
 import Navigation from '../../navigation/appNavigation'
-import { SeatInfo, TGameInfo, TMessage } from './type'
+import { MIC_HANDLE_TYPE, SeatInfo, TGameInfo, TMessage } from './type'
 import Seat from './components/Seat'
 import Icon from '../../components/Icon'
 import MessageBox from './components/MessageBox'
@@ -40,6 +41,8 @@ const VoiceRoom = (): React.JSX.Element => {
 
 	const token = useSelector((state: any) => state.app.token)
 
+	const messageBoxRef = useRef<ScrollView>(null)
+
 	const { params } = useRoute<VoiceRoomParams>()
 
 	const { coverImg, subject: roomName, aliRoomId: roomId, heatValue } = params
@@ -48,7 +51,7 @@ const VoiceRoom = (): React.JSX.Element => {
 
 	const [isOnMic, setIsOnMic] = useState<boolean>(false)
 
-	const [audiences, setAudiences] = useState<Array<any>>([])
+	const [audienceCount, setAudienceCount] = useState<number>(0)
 
 	const [seats, setSeats] = useState<Array<SeatInfo>>(initialSeats)
 
@@ -63,12 +66,9 @@ const VoiceRoom = (): React.JSX.Element => {
 		}
 	])
 
-	const [amIMaster, setAmIMaster] = useState<boolean>(false)
-
 	const [isJoin, setIsJoin] = useState<boolean>(false)
 
 	useEffect(() => {
-		setAmIMaster(userInfo.userId === params.createUser!.toString())
 		joinRoomHandle()
 	}, [])
 
@@ -81,33 +81,81 @@ const VoiceRoom = (): React.JSX.Element => {
 			await VoiceRoomModule.setAuthorizeToken(token)
 			// 获取麦位信息
 			await VoiceRoomModule.getMicInfoList(roomId)
+		})
+		DeviceEventEmitter.addListener('onJoinedRoom', (data: string) => {
+			console.log('onJoinedRoom', data)
+			const user = JSON.parse(data)
 			// 添加消息
 			setMessageList((prev) => {
 				prev.push({
 					id: Date.now() + '',
 					type: 'system',
-					content: `${data.roomId} 进入房间`
+					content: `${user.userName} 进入房间`
 				})
 				return [...prev]
 			})
-		})
-		DeviceEventEmitter.addListener('onJoinedRoom', (data: any) => {
-			console.log('onJoinedRoom', data)
+			messageBoxRef.current?.scrollToEnd()
 		})
 		DeviceEventEmitter.addListener('onLeave', (data: any) => {
 			console.log('onLeave', data)
 		})
-		DeviceEventEmitter.addListener('onJoinedMic', (data: any) => {
+		DeviceEventEmitter.addListener('onLeavedRoom', (data: string) => {
+			console.log('onLeavedRoom', data)
+			const user = JSON.parse(data)
+			// 添加消息
+			setMessageList((prev) => {
+				prev.push({
+					id: Date.now() + '',
+					type: 'system',
+					content: `${user.userName} 离开房间`
+				})
+				return [...prev]
+			})
+			messageBoxRef.current?.scrollToEnd()
+		})
+		DeviceEventEmitter.addListener('onJoinedMic', (data: string) => {
+			// 有人上麦
+			const micUser = JSON.parse(data)
 			console.log('onJoinedMic', data)
+			updateSeats(micUser, MIC_HANDLE_TYPE.JOIN)
 		})
-		DeviceEventEmitter.addListener('onLeavedMic', (data: any) => {
+		DeviceEventEmitter.addListener('onLeavedMic', (data: string) => {
+			// 有人下麦
+			const micUser = JSON.parse(data)
 			console.log('onLeavedMic', data)
+			updateSeats(micUser, MIC_HANDLE_TYPE.LEAVE)
 		})
-		DeviceEventEmitter.addListener('onRoomMicListChanged', (data: string) => {
+		DeviceEventEmitter.addListener('onRoomMicListChanged', async (data: string) => {
 			// 获取房间麦位信息列表
 			const micUserList = JSON.parse(data)
 			console.log('onRoomMicListChanged', micUserList)
-			handleSeats(micUserList)
+			updateSeats(micUserList)
+			// 判断自己是否在麦位上
+			const micUser = micUserList.find((item: any) => item.userId === userInfo.id)
+			if (micUser) {
+				// 直接上麦
+				await VoiceRoomModule.joinMicDirect(roomId, micUser.micPosition)
+			}
+		})
+		DeviceEventEmitter.addListener('onReceivedTextMessage', (data: any) => {
+			const { jsonUserInfo, text } = data
+			const userInfo = JSON.parse(jsonUserInfo)
+			console.log('onReceivedTextMessage', data)
+			// 添加消息
+			setMessageList((prev) => {
+				prev.push({
+					id: Date.now() + '',
+					type: 'user',
+					content: text,
+					userName: userInfo.userName,
+					avatar: userInfo.avatarUrl === 'null' ? null : userInfo.avatarUrl
+				})
+				return [...prev]
+			})
+			messageBoxRef.current?.scrollToEnd()
+		})
+		DeviceEventEmitter.addListener('onMemberCountChanged', (count: number) => {
+			setAudienceCount(count)
 		})
 		const joinRoomRes = await VoiceRoomModule.joinRoom(roomId)
 		const { result, msg } = joinRoomRes
@@ -119,30 +167,71 @@ const VoiceRoom = (): React.JSX.Element => {
 		}
 	}
 
-	const handleSeats = (micUserList: Array<any>) => {
-		const newSeats = seats.map((item: SeatInfo) => {
-			const micUser = micUserList.find((user: any) => user.micPosition === item.seatNumber)
-			if (micUser) {
-				const {avatarUrl, isMute, userId, userName} = micUser
-				return {
-					...item,
-					isUsed: true,
-					isMuted: isMute,
-					userInfo: {
-						avatar: avatarUrl === 'null' ? null : avatarUrl,
-						userId,
-						userName
+	const updateSeats = (micUsers: Array<any> | any, type?: MIC_HANDLE_TYPE) => {
+		if (Array.isArray(micUsers)) {
+			if (micUsers.length === 0) return
+			const newSeats = seats.map((item: SeatInfo) => {
+				const micUser = micUsers.find((user: any) => user.micPosition === item.seatNumber)
+				if (micUser) {
+					const { avatarUrl, isMute, userId, userName } = micUser
+					return {
+						...item,
+						isUsed: true,
+						isMuted: isMute,
+						userInfo: {
+							avatar: avatarUrl === 'null' ? null : avatarUrl,
+							userId,
+							userName
+						}
+					}
+				} else {
+					return {
+						...item,
+						isUsed: false,
+						isMuted: false,
+						userInfo: undefined
 					}
 				}
-			} else {
-				return {
-					...item,
-					isUsed: false,
-					userInfo: undefined
+			})
+			console.log('初始化麦位信息: ', newSeats)
+			setSeats([...newSeats])
+		} else {
+			const { micPosition, avatarUrl, isMute, userId, userName } = micUsers
+			const isCurrentUser = userId === userInfo.id
+			if (type === MIC_HANDLE_TYPE.JOIN) {
+				setSeats((prev) => {
+					prev[micPosition - 1] = {
+						...prev[micPosition - 1],
+						isUsed: true,
+						isMuted: isMute,
+						userInfo: {
+							avatar: avatarUrl === 'null' ? null : avatarUrl,
+							userId,
+							userName
+						}
+					}
+					return [...prev]
+				})
+				if (isCurrentUser) {
+					setIsOnSeat(true)
+					EventEmitter.emit(LISTENER, { message: '上麦成功' })
+				}
+			} else if (type === MIC_HANDLE_TYPE.LEAVE) {
+				setSeats((prev) => {
+					prev[micPosition - 1] = {
+						...prev[micPosition - 1],
+						isUsed: false,
+						isMuted: false,
+						userInfo: undefined
+					}
+					return [...prev]
+				})
+				if (isCurrentUser) {
+					setIsOnSeat(false)
+					EventEmitter.emit(LISTENER, { message: '下麦成功' })
 				}
 			}
-		})
-		setSeats([...newSeats])
+		}
 	}
 
 	const backHandle = async () => {
@@ -153,11 +242,20 @@ const VoiceRoom = (): React.JSX.Element => {
 			DeviceEventEmitter.removeAllListeners('onJoin')
 			DeviceEventEmitter.removeAllListeners('onJoinedRoom')
 			DeviceEventEmitter.removeAllListeners('onLeave')
+			DeviceEventEmitter.removeAllListeners('onLeavedRoom')
 			DeviceEventEmitter.removeAllListeners('onJoinedMic')
 			DeviceEventEmitter.removeAllListeners('onLeavedMic')
 			DeviceEventEmitter.removeAllListeners('onRoomMicListChanged')
+			DeviceEventEmitter.removeAllListeners('onReceivedTextMessage')
+			DeviceEventEmitter.removeAllListeners('onMemberCountChanged')
 
 			Navigation.back()
+		}
+	}
+
+	const sendMessageHandle = async (message: string) => {
+		if (message) {
+			await VoiceRoomModule.sendMessage(roomId, message)
 		}
 	}
 
@@ -165,37 +263,25 @@ const VoiceRoom = (): React.JSX.Element => {
 
 	const otherSeatHandle = async (pos: number) => {
 		if (isOnSeat) {
-			const leaveMicRes = await VoiceRoomModule.leaveMic(roomId)
-			if (leaveMicRes.result) {
-				setIsOnSeat(false)
-				setSeats((prev) => {
-					prev[pos - 1].isUsed = false
-					prev[pos - 1].userInfo = undefined
-					return [...prev]
-				})
-				EventEmitter.emit(LISTENER, { message: leaveMicRes.msg })
+			if (seats[pos - 1].userInfo?.userId === userInfo.id) {
+				// 自己的麦位 下麦
+				await VoiceRoomModule.leaveMic(roomId)
+			} else {
+				EventEmitter.emit(LISTENER, { message: '已在麦位上' })
 			}
 		} else {
-			const joinMicRes = await VoiceRoomModule.joinMic(roomId, {
-				micIndex: pos,
-				microphoneSwitch: false
-			})
-			if (joinMicRes.result) {
-				setIsOnSeat(true)
-				setSeats((prev) => {
-					prev[pos - 1].isUsed = true
-					prev[pos - 1].userInfo = userInfo
-					return [...prev]
-				})
-				EventEmitter.emit(LISTENER, { message: joinMicRes.msg })
+			if (seats[pos - 1].isUsed) {
+				EventEmitter.emit(LISTENER, { message: '该麦位已被占用' })
 			} else {
-				EventEmitter.emit(LISTENER, { message: joinMicRes.msg })
+				await VoiceRoomModule.joinMic(roomId, {
+					micIndex: pos,
+					microphoneSwitch: true
+				})
 			}
 		}
 	}
 
 	const renderHeaderAvatar = () => {
-		return audiences.map((item, index) => {})
 	}
 
 	const microphoneHandle = () => {
@@ -213,7 +299,7 @@ const VoiceRoom = (): React.JSX.Element => {
 
 	return (
 		<>
-			{isJoin && (
+			{isJoin ? (
 				<View className="w-full h-full items-center">
 					<Image source={{ uri: `${IMG_BASE_URL}${coverImg}` }} style={styles.absolute} />
 					<BlurView style={styles.absolute} blurType="dark" blurAmount={10} />
@@ -258,7 +344,7 @@ const VoiceRoom = (): React.JSX.Element => {
 									className="absolute right-0 flex flex-row items-center justify-center rounded-full mr-2"
 									style={{ width: 25, height: 25, backgroundColor: 'rgba(255, 255, 255, 0.3)' }}
 								>
-									<Text style={{ color: '#fff' }}>{audiences.length}</Text>
+									<Text style={{ color: '#fff' }}>{audienceCount}</Text>
 								</View>
 							</View>
 							<Pressable>
@@ -314,6 +400,7 @@ const VoiceRoom = (): React.JSX.Element => {
 									isMaster={false}
 									isMuted={item.isMuted}
 									isUsed={item.isUsed}
+									uid={userInfo.id}
 									onPress={() => otherSeatHandle(item.seatNumber!)}
 								/>
 							)
@@ -326,6 +413,7 @@ const VoiceRoom = (): React.JSX.Element => {
 					>
 						{/* message-box */}
 						<MessageBox
+							ref={messageBoxRef}
 							style={{
 								maxHeight: 280
 							}}
@@ -341,7 +429,7 @@ const VoiceRoom = (): React.JSX.Element => {
 						className="w-full flex flex-row items-center"
 						style={{ marginLeft: 30, marginTop: 10 }}
 					>
-						<MessageInput />
+						<MessageInput onInput={sendMessageHandle} />
 						{isOnSeat && (
 							<Pressable onPress={microphoneHandle} style={{ marginLeft: 50 }}>
 								<Image
@@ -356,7 +444,7 @@ const VoiceRoom = (): React.JSX.Element => {
 						)}
 					</View>
 				</View>
-			)}
+			) : <ActivityIndicator size="large" animating={!isJoin} className="mt-12" />}
 		</>
 	)
 }
