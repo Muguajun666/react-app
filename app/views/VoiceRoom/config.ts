@@ -2,6 +2,13 @@ import { SeatInfo } from "./type";
 
 export const initialSeats: SeatInfo[] = [
   {
+    seatNumber: 0,
+    isUsed: false,
+    isLocked: false,
+    isMuted: false,
+    userInfo: undefined
+  },
+  {
     seatNumber: 1,
     isUsed: false,
     isLocked: false,

@@ -8,18 +8,24 @@ interface SeatProps extends SeatInfo {
 	uid?: string
 	isMaster?: boolean
 	style?: StyleProp<ViewStyle>
-	onPress?: () => void;
+	onPress?: () => void
 }
 
 const Seat = (props: SeatProps): React.JSX.Element => {
-	const { uid, isMaster, style, userInfo, seatNumber, isUsed, isLocked, isMuted, onPress } =
-		props
+	const { uid, isMaster, style, userInfo, seatNumber, isUsed, isLocked, isMuted, onPress } = props
 
 	return (
 		<Pressable onPress={onPress} style={style}>
 			{isMaster ? (
 				<View>
-					<Avatar alt="Avatar" style={[styles.seatSize, isUsed && styles.masterBorder]}>
+					<Avatar
+						alt="Avatar"
+						style={[
+							styles.seatSize,
+							isUsed && styles.masterBorder,
+							uid === userInfo?.userId && styles.currentBorder
+						]}
+					>
 						<>
 							{isUsed ? (
 								<AvatarImage
@@ -36,16 +42,30 @@ const Seat = (props: SeatProps): React.JSX.Element => {
 							)}
 						</>
 					</Avatar>
-					<Text style={styles.userText}>{userInfo ? userInfo.userName : 'Master'}</Text>
+					<Text style={styles.userText} numberOfLines={1} ellipsizeMode="tail">{isUsed ? userInfo?.userName : 'Master'}</Text>
 					{isUsed && (
 						<View style={styles.microphone}>
-							<Image style={{ width: 14, height: 14}} source={isMuted ? require('../../../../assets/images/microphone-slash.png') : require('../../../../assets/images/microphone.png')} />
+							<Image
+								style={{ width: 14, height: 14 }}
+								source={
+									isMuted
+										? require('../../../../assets/images/microphone-slash.png')
+										: require('../../../../assets/images/microphone.png')
+								}
+							/>
 						</View>
 					)}
 				</View>
 			) : (
 				<View>
-					<Avatar alt="Avatar" style={[styles.seatSize, isUsed && styles.otherBorder, uid === userInfo?.userId && styles.currentBorder]}>
+					<Avatar
+						alt="Avatar"
+						style={[
+							styles.seatSize,
+							isUsed && styles.otherBorder,
+							uid === userInfo?.userId && styles.currentBorder
+						]}
+					>
 						<>
 							{isUsed ? (
 								<AvatarImage
@@ -66,13 +86,22 @@ const Seat = (props: SeatProps): React.JSX.Element => {
 							)}
 						</>
 					</Avatar>
-					<Text style={styles.userText} numberOfLines={1} ellipsizeMode="tail">{isUsed ? userInfo?.userName :`No.${seatNumber}`}</Text>
-          {isUsed && (
+					<Text style={styles.userText} numberOfLines={1} ellipsizeMode="tail">
+						{isUsed ? userInfo?.userName : `No.${seatNumber}`}
+					</Text>
+					{isUsed && (
 						<View style={styles.microphone}>
-							<Image style={{ width: 14, height: 14}} source={isMuted ? require('../../../../assets/images/microphone-slash.png') : require('../../../../assets/images/microphone.png')} />
+							<Image
+								style={{ width: 14, height: 14 }}
+								source={
+									isMuted
+										? require('../../../../assets/images/microphone-slash.png')
+										: require('../../../../assets/images/microphone.png')
+								}
+							/>
 						</View>
 					)}
-        </View>
+				</View>
 			)}
 		</Pressable>
 	)
@@ -101,7 +130,7 @@ const styles = StyleSheet.create({
 		textAlign: 'center',
 		marginTop: 4,
 		fontWeight: 400,
-		width: 64,
+		width: 64
 	},
 	userLeave: {
 		backgroundColor: 'rgba(255, 255, 255, 0.3)'
@@ -109,7 +138,7 @@ const styles = StyleSheet.create({
 	microphone: {
 		position: 'absolute',
 		bottom: 20,
-		right: 2,
+		right: 2
 	}
 })
 
