@@ -77,6 +77,19 @@ const VoiceRoom = (): React.JSX.Element => {
 
 	useEffect(() => {
 		joinRoomHandle()
+
+		return () => {
+			DeviceEventEmitter.removeAllListeners('onJoin')
+			DeviceEventEmitter.removeAllListeners('onJoinedRoom')
+			DeviceEventEmitter.removeAllListeners('onLeave')
+			DeviceEventEmitter.removeAllListeners('onLeavedRoom')
+			DeviceEventEmitter.removeAllListeners('onJoinedMic')
+			DeviceEventEmitter.removeAllListeners('onLeavedMic')
+			DeviceEventEmitter.removeAllListeners('onRoomMicListChanged')
+			DeviceEventEmitter.removeAllListeners('onReceivedTextMessage')
+			DeviceEventEmitter.removeAllListeners('onMemberCountChanged')
+			console.log('组件卸载', seats)
+		}
 	}, [])
 
 	const joinRoomHandle = async () => {
@@ -208,8 +221,10 @@ const VoiceRoom = (): React.JSX.Element => {
 			const isCurrentUser = userId === userInfo.id
 			if (type === MIC_HANDLE_TYPE.JOIN) {
 				setSeats((prev) => {
-					prev[micPosition] = {
-						...prev[micPosition],
+					const newSeats = [...prev]
+
+					newSeats[micPosition] = {
+						...newSeats[micPosition],
 						isUsed: true,
 						isMuted: isMute,
 						userInfo: {
@@ -218,7 +233,7 @@ const VoiceRoom = (): React.JSX.Element => {
 							userName
 						}
 					}
-					return [...prev]
+					return newSeats
 				})
 				if (isCurrentUser) {
 					setIsOnSeat(true)
@@ -226,13 +241,16 @@ const VoiceRoom = (): React.JSX.Element => {
 				}
 			} else if (type === MIC_HANDLE_TYPE.LEAVE) {
 				setSeats((prev) => {
-					prev[micPosition] = {
-						...prev[micPosition],
+					const newSeats = [...prev]
+
+					newSeats[micPosition] = {
+						...newSeats[micPosition],
 						isUsed: false,
 						isMuted: false,
 						userInfo: undefined
 					}
-					return [...prev]
+
+					return newSeats
 				})
 				if (isCurrentUser) {
 					setIsOnSeat(false)
@@ -247,16 +265,6 @@ const VoiceRoom = (): React.JSX.Element => {
 		const leaveRoomRes = await VoiceRoomModule.leaveRoom(roomId)
 
 		if (leaveRoomRes) {
-			DeviceEventEmitter.removeAllListeners('onJoin')
-			DeviceEventEmitter.removeAllListeners('onJoinedRoom')
-			DeviceEventEmitter.removeAllListeners('onLeave')
-			DeviceEventEmitter.removeAllListeners('onLeavedRoom')
-			DeviceEventEmitter.removeAllListeners('onJoinedMic')
-			DeviceEventEmitter.removeAllListeners('onLeavedMic')
-			DeviceEventEmitter.removeAllListeners('onRoomMicListChanged')
-			DeviceEventEmitter.removeAllListeners('onReceivedTextMessage')
-			DeviceEventEmitter.removeAllListeners('onMemberCountChanged')
-			setSeats(initialSeats)
 			Navigation.back()
 		}
 	}
