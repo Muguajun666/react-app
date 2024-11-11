@@ -28,5 +28,6 @@ export type TGameInfo = {
 
 export enum MIC_HANDLE_TYPE {
 	JOIN = 'join',
-	LEAVE = 'leave'
+	LEAVE = 'leave',
+	SWITCH = 'switch'
 }

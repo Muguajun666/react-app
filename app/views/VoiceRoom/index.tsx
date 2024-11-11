@@ -17,18 +17,19 @@ import { IMG_BASE_URL } from '@env'
 import { useSelector } from 'react-redux'
 import { Avatar, AvatarImage } from '../../components/ui/avatar'
 import Navigation from '../../navigation/appNavigation'
-import { MIC_HANDLE_TYPE, SeatInfo, TGameInfo, TMessage } from './type'
+import { MIC_HANDLE_TYPE, SeatInfo, TGameInfo, TMessage, UserInfo } from './type'
 import Seat from './components/Seat'
 import Icon from '../../components/Icon'
 import MessageBox from './components/MessageBox'
 import GameSwiper from './components/GameSwiper'
 import MessageInput from './components/MessageInput'
-import { initialSeats } from './config'
+import { initialMatserSeats, initialSeats } from './config'
 import { LISTENER } from '../../components/Toast'
 import EventEmitter from '../../utils/emitter'
 import BottomSheet from '@gorhom/bottom-sheet'
 import UserToSelfSheet from './components/BottomSheet/UserToSelfSheet'
 import UserToUsedSeatSheet from './components/BottomSheet/UserToUsedSeatSheet'
+import MasterToUsedSeatSheet from './components/BottomSheet/MasterToUsedSeatSheet'
 
 export type VoiceRoomParams = {
 	key: string
@@ -47,18 +48,23 @@ const VoiceRoom = (): React.JSX.Element => {
 
 	const userToSelfSheetRef = useRef<BottomSheet>(null)
 	const userToUsedSeatSheetRef = useRef<BottomSheet>(null)
+	const masterToUsedSeatSheetRef = useRef<BottomSheet>(null)
 
 	const [isBottomSheetOpen, setIsBottomSheetOpen] = useState<boolean>(false)
 
 	const { params } = useRoute<VoiceRoomParams>()
 
-	const { coverImg, subject: roomName, aliRoomId: roomId, heatValue } = params
+	const { coverImg, subject: roomName, aliRoomId: roomId, heatValue, createUser } = params
+
+	const [selectedUser, setSelectedUser] = useState<UserInfo>({})
 
 	const [isOnSeat, setIsOnSeat] = useState<boolean>(false)
 
 	const [isOnMic, setIsOnMic] = useState<boolean>(false)
 
 	const [audienceCount, setAudienceCount] = useState<number>(0)
+
+	const [masterSeat, setMasterSeat] = useState<SeatInfo>(initialMatserSeats)
 
 	const [seats, setSeats] = useState<Array<SeatInfo>>(initialSeats)
 
@@ -88,7 +94,8 @@ const VoiceRoom = (): React.JSX.Element => {
 			DeviceEventEmitter.removeAllListeners('onRoomMicListChanged')
 			DeviceEventEmitter.removeAllListeners('onReceivedTextMessage')
 			DeviceEventEmitter.removeAllListeners('onMemberCountChanged')
-			console.log('组件卸载', seats)
+			DeviceEventEmitter.removeAllListeners('onKickOutRoom')
+			DeviceEventEmitter.removeAllListeners('onMicUserMicrophoneChanged')
 		}
 	}, [])
 
@@ -118,7 +125,6 @@ const VoiceRoom = (): React.JSX.Element => {
 		})
 		DeviceEventEmitter.addListener('onLeave', (data: any) => {
 			console.log('onLeave', data)
-			// setSeats(initialSeats)
 		})
 		DeviceEventEmitter.addListener('onLeavedRoom', (data: string) => {
 			console.log('onLeavedRoom', data)
@@ -178,6 +184,20 @@ const VoiceRoom = (): React.JSX.Element => {
 		DeviceEventEmitter.addListener('onMemberCountChanged', (count: number) => {
 			setAudienceCount(count)
 		})
+		DeviceEventEmitter.addListener('onKickOutRoom', async (data: any) => {
+			console.log('onKickOutRoom', data)
+			Navigation.back()
+		})
+		DeviceEventEmitter.addListener('onMicUserMicrophoneChanged', (data: any) => {
+			const { jsonUserInfo, open } = data
+			const newUserInfo = JSON.parse(jsonUserInfo)
+			console.log('onMicUserMicrophoneChanged', data)
+			if (newUserInfo.userId === userInfo.id) {
+				open ? setIsOnMic(true) : setIsOnMic(false)
+			}
+			updateSeats(newUserInfo, MIC_HANDLE_TYPE.SWITCH)
+		})
+
 		const joinRoomRes = await VoiceRoomModule.joinRoom(roomId)
 		const { result, msg } = joinRoomRes
 		console.log('joinRoomRes', result, msg)
@@ -214,47 +234,95 @@ const VoiceRoom = (): React.JSX.Element => {
 					}
 				}
 			})
-			console.log('初始化麦位信息: ', newSeats)
 			setSeats([...newSeats])
 		} else {
 			const { micPosition, avatarUrl, isMute, userId, userName } = micUsers
 			const isCurrentUser = userId === userInfo.id
 			if (type === MIC_HANDLE_TYPE.JOIN) {
-				setSeats((prev) => {
-					const newSeats = [...prev]
-
-					newSeats[micPosition] = {
-						...newSeats[micPosition],
-						isUsed: true,
-						isMuted: isMute,
-						userInfo: {
-							avatar: avatarUrl === 'null' ? null : avatarUrl,
-							userId,
-							userName
+				if (micPosition === 0) {
+					setMasterSeat((prev) => {
+						return {
+							...prev,
+							isUsed: true,
+							isMuted: isMute,
+							userInfo: {
+								avatar: avatarUrl === 'null' ? null : avatarUrl,
+								userId,
+								userName
+							}
 						}
-					}
-					return newSeats
-				})
+					})
+				} else {
+					setSeats((prev) => {
+						const newSeats = [...prev]
+
+						newSeats[micPosition - 1] = {
+							...newSeats[micPosition - 1],
+							isUsed: true,
+							isMuted: isMute,
+							userInfo: {
+								avatar: avatarUrl === 'null' ? null : avatarUrl,
+								userId,
+								userName
+							}
+						}
+						return newSeats
+					})
+				}
+
 				if (isCurrentUser) {
 					setIsOnSeat(true)
+					setIsOnMic(true)
 					EventEmitter.emit(LISTENER, { message: '上麦成功' })
 				}
 			} else if (type === MIC_HANDLE_TYPE.LEAVE) {
-				setSeats((prev) => {
-					const newSeats = [...prev]
+				if (micPosition === 0) {
+					setMasterSeat((prev) => {
+						return {
+							...prev,
+							isUsed: false,
+							isMuted: false,
+							userInfo: undefined
+						}
+					})
+				} else {
+					setSeats((prev) => {
+						const newSeats = [...prev]
 
-					newSeats[micPosition] = {
-						...newSeats[micPosition],
-						isUsed: false,
-						isMuted: false,
-						userInfo: undefined
-					}
+						newSeats[micPosition - 1] = {
+							...newSeats[micPosition - 1],
+							isUsed: false,
+							isMuted: false,
+							userInfo: undefined
+						}
 
-					return newSeats
-				})
+						return newSeats
+					})
+				}
+
 				if (isCurrentUser) {
 					setIsOnSeat(false)
+					setIsOnMic(false)
 					EventEmitter.emit(LISTENER, { message: '下麦成功' })
+				}
+			} else if (type === MIC_HANDLE_TYPE.SWITCH) {
+				if (micPosition === 0) {
+					setMasterSeat((prev) => {
+						return {
+							...prev,
+							isMuted: isMute
+						}
+					})
+				} else {
+					setSeats((prev) => {
+						const newSeats = [...prev]
+
+						newSeats[micPosition - 1] = {
+							...newSeats[micPosition - 1],
+							isMuted: isMute
+						}
+						return newSeats
+					})
 				}
 			}
 		}
@@ -275,7 +343,20 @@ const VoiceRoom = (): React.JSX.Element => {
 		}
 	}
 
-	const masterSeatHandle = () => {}
+	const masterSeatHandle = () => {
+		if (userInfo.id !== createUser) {
+			if (masterSeat.isUsed) {
+				if (!isBottomSheetOpen) {
+					setSelectedUser(masterSeat.userInfo!)
+					setTimeout(() => {
+						userToUsedSeatSheetRef.current?.expand()
+					}, 0)
+				}
+			} else {
+				EventEmitter.emit(LISTENER, { message: '房主不在' })
+			}
+		}
+	}
 
 	const onBottomSheetOpen = () => {
 		setIsBottomSheetOpen(true)
@@ -292,48 +373,86 @@ const VoiceRoom = (): React.JSX.Element => {
 	}
 
 	const otherSeatHandle = async (pos: number) => {
-		console.log('otherSeatHandle', pos)
-		// 以下为非房主逻辑
-		if (isOnSeat) {
-			if (seats[pos].userInfo?.userId === userInfo.id) {
+		// 房主逻辑
+		if (userInfo.id === createUser) {
+			if (seats[pos - 1].isUsed) {
 				if (!isBottomSheetOpen) {
-					userToSelfSheetRef.current?.expand()
+					setSelectedUser(seats[pos - 1].userInfo!)
+					setTimeout(() => {
+						masterToUsedSeatSheetRef.current?.expand()
+					}, 0)
+				} else {
+					// todo 上锁解锁逻辑
+				}
+			}
+		} else {
+			// 非房主逻辑
+			if (isOnSeat) {
+				if (seats[pos - 1].userInfo?.userId === userInfo.id) {
+					if (!isBottomSheetOpen) {
+						userToSelfSheetRef.current?.expand()
+					}
+				} else {
+					if (seats[pos - 1].isUsed) {
+						if (!isBottomSheetOpen) {
+							setSelectedUser(seats[pos - 1].userInfo!)
+							setTimeout(() => {
+								userToUsedSeatSheetRef.current?.expand()
+							}, 0)
+						}
+					} else {
+						EventEmitter.emit(LISTENER, { message: '已在麦位上' })
+					}
 				}
 			} else {
-				if (seats[pos].isUsed) {
+				if (seats[pos - 1].isUsed) {
 					if (!isBottomSheetOpen) {
 						userToUsedSeatSheetRef.current?.expand()
 					}
 				} else {
-					EventEmitter.emit(LISTENER, { message: '已在麦位上' })
+					await VoiceRoomModule.joinMic(roomId, {
+						micIndex: pos,
+						microphoneSwitch: true
+					})
 				}
-			}
-		} else {
-			if (seats[pos].isUsed) {
-				if (!isBottomSheetOpen) {
-					userToUsedSeatSheetRef.current?.expand()
-				}
-			} else {
-				await VoiceRoomModule.joinMic(roomId, {
-					micIndex: pos,
-					microphoneSwitch: true
-				})
 			}
 		}
+	}
+
+	const kickOutHandle = async () => {
+		const kickOutRes = await VoiceRoomModule.kickOutRoom(roomId, selectedUser)
+		if (!kickOutRes) {
+			EventEmitter.emit(LISTENER, { message: '踢出房间失败' })
+		} else {
+			setSeats((prev) => {
+				const newSeats = prev.map((item) => {
+					if (item.userInfo?.userId === selectedUser.userId) {
+						return {
+							...item,
+							isUsed: false,
+							isMuted: false,
+							userInfo: undefined
+						}
+					} else {
+						return item
+					}
+				})
+
+				return newSeats
+			})
+
+			EventEmitter.emit(LISTENER, { message: '踢出房间成功' })
+		}
+		masterToUsedSeatSheetRef.current?.close()
 	}
 
 	const renderHeaderAvatar = () => {}
 
 	const microphoneHandle = () => {
-		if (!isOnSeat) return
 		if (isOnMic) {
-			console.log('下麦')
-			// todo 下麦操作
-			setIsOnMic(false)
+			VoiceRoomModule.switchMicrophone(roomId, false)
 		} else {
-			console.log('上麦')
-			// todo 上麦操作
-			setIsOnMic(true)
+			VoiceRoomModule.switchMicrophone(roomId, true)
 		}
 	}
 
@@ -425,11 +544,11 @@ const VoiceRoom = (): React.JSX.Element => {
 						<Seat
 							isMaster={true}
 							uid={userInfo.id}
-							userInfo={seats[0].userInfo}
-							isLocked={seats[0].isLocked}
-							isMuted={seats[0].isMuted}
-							isUsed={seats[0].isUsed}
-							onPress={() => masterSeatHandle}
+							userInfo={masterSeat.userInfo}
+							isLocked={masterSeat.isLocked}
+							isMuted={masterSeat.isMuted}
+							isUsed={masterSeat.isUsed}
+							onPress={() => masterSeatHandle()}
 						/>
 					</View>
 					{/* other-avatar */}
@@ -437,7 +556,7 @@ const VoiceRoom = (): React.JSX.Element => {
 						className="w-full flex flex-row items-center justify-center flex-wrap"
 						style={{ marginTop: 18, height: 200 }}
 					>
-						{seats.slice(1).map((item) => {
+						{seats.map((item) => {
 							return (
 								<Seat
 									style={{ flexBasis: '25%', flexShrink: 0, alignItems: 'center', marginTop: 6 }}
@@ -479,7 +598,7 @@ const VoiceRoom = (): React.JSX.Element => {
 					>
 						<MessageInput onInput={sendMessageHandle} />
 						{isOnSeat && (
-							<Pressable onPress={microphoneHandle} style={{ marginLeft: 50 }}>
+							<Pressable onPress={() => microphoneHandle()} style={{ marginLeft: 50 }}>
 								<Image
 									source={
 										isOnMic
@@ -503,9 +622,18 @@ const VoiceRoom = (): React.JSX.Element => {
 						ref={userToUsedSeatSheetRef}
 						onClose={onBottomSheetClose}
 						onOpen={onBottomSheetOpen}
-						userHandle={() => console.log('Add friends/Send message')}
+						userHandle={() => console.log('Add friends/Send message', selectedUser)}
 						checkRelationship={() => console.log('Check relationship')}
 						closeHandle={() => userToUsedSeatSheetRef.current?.close()}
+					/>
+					<MasterToUsedSeatSheet
+						ref={masterToUsedSeatSheetRef}
+						onClose={onBottomSheetClose}
+						onOpen={onBottomSheetOpen}
+						userHandle={() => console.log('Add friends/Send message', selectedUser)}
+						onLockSeat={() => console.log('Lock seat')}
+						onKickOut={kickOutHandle}
+						closeHandle={() => masterToUsedSeatSheetRef.current?.close()}
 					/>
 				</View>
 			) : (

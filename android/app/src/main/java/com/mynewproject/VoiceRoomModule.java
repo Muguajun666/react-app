@@ -73,15 +73,8 @@ public class VoiceRoomModule extends ReactContextBaseJavaModule {
     public void createVoiceRoom(ReadableMap baseUserInfo, ReadableMap baseImInfo, ReadableMap baseRtcInfo, ReadableMap baseRoomInfo, Promise promise) {
         WritableMap response = new WritableNativeMap();
         try {
-            // 先从roomMap里面找
-            ARTCVoiceRoomEngine voiceRoom;
-            if (roomMap.containsKey(baseRoomInfo.getString("aliRoomId"))) {
-                voiceRoom = roomMap.get(baseRoomInfo.getString("aliRoomId"));
-                System.out.println("已有房间实例");
-            } else {
-                voiceRoom = AUIVoiceRoomFactory.createVoiceRoom();
-                System.out.println("新建房间实例");
-            }
+            ARTCVoiceRoomEngine voiceRoom = AUIVoiceRoomFactory.createVoiceRoom();
+
             // 构建 UserInfo
             UserInfo userInfo = new UserInfo(baseUserInfo.getString("id"), baseUserInfo.getString("id"));
             userInfo.avatarUrl = baseUserInfo.isNull("avatar") ? "null" : baseUserInfo.getString("avatar");
@@ -178,6 +171,8 @@ public class VoiceRoomModule extends ReactContextBaseJavaModule {
                     response.putString("msg","加入房间成功");
                     promise.resolve(response);
                 } else {
+                    roomMap.remove(roomInfo.roomId);
+                    voiceRoom.release();
                     response.putBoolean("result",false);
                     response.putString("msg","加入房间失败");
                     promise.resolve(response);
@@ -210,6 +205,8 @@ public class VoiceRoomModule extends ReactContextBaseJavaModule {
 
             @Override
             public void onLeave() {
+                roomMap.remove(roomInfo.roomId);
+                voiceRoom.release();
                 reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit("onLeave", null);
             }
 
@@ -226,6 +223,24 @@ public class VoiceRoomModule extends ReactContextBaseJavaModule {
             }
 
             @Override
+            public  void onKickOutRoom() {
+                if (voiceRoom.isJoinMic()) {
+                    voiceRoom.leaveMic(new ActionCallback() {
+                        @Override
+                        public void onResult(int code, String msg, Map<String, Object> params) {
+                            roomMap.remove(roomInfo.roomId);
+                            voiceRoom.release();
+                            reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit("onKickOutRoom", null);
+                        }
+                    });
+                } else {
+                    roomMap.remove(roomInfo.roomId);
+                    voiceRoom.release();
+                    reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit("onKickOutRoom", null);
+                }
+            }
+
+            @Override
             public void onReceivedTextMessage(UserInfo userInfo, String text) {
                 WritableMap params = Arguments.createMap();
                 String jsonUserInfo = JSON.toJSONString(userInfo);
@@ -238,9 +253,16 @@ public class VoiceRoomModule extends ReactContextBaseJavaModule {
             public void onMemberCountChanged(int count) {
                 reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit("onMemberCountChanged", count);
             }
+
+            @Override
+            public void onMicUserMicrophoneChanged(UserInfo userInfo, boolean open) {
+                WritableMap params = Arguments.createMap();
+                String jsonUserInfo = JSON.toJSONString(userInfo);
+                params.putString("jsonUserInfo", jsonUserInfo);
+                params.putBoolean("open", open);
+                reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit("onMicUserMicrophoneChanged", params);
+            }
         };
-
-
 
         voiceRoom.addObserver(this.voiceRoomObserver);
         voiceRoom.joinRoom(this.roomInfo, this.rtcInfo, joinRoomCallback);
@@ -279,7 +301,7 @@ public class VoiceRoomModule extends ReactContextBaseJavaModule {
             voiceRoom.leaveRoom(leaveRoomCallback);
         } else {
             System.out.println("房间实例不存在");
-            promise.resolve(false);
+            promise.resolve(true);
         }
     }
 
@@ -393,6 +415,39 @@ public class VoiceRoomModule extends ReactContextBaseJavaModule {
                 promise.resolve(null);
             }
         });
+    }
+
+    // 踢出麦位
+    @ReactMethod
+    public void kickOutRoom(String aliRoomId, ReadableMap baseUserInfo, Promise promise) {
+        ARTCVoiceRoomEngine voiceRoom = roomMap.get(aliRoomId);
+
+        UserInfo userInfo = new UserInfo(baseUserInfo.getString("userId"), baseUserInfo.getString("userId"));
+        userInfo.avatarUrl = baseUserInfo.isNull("avatar") ? "null" : baseUserInfo.getString("avatar");
+        userInfo.userName = baseUserInfo.getString("userName");
+
+        voiceRoom.kickOut(userInfo, new ActionCallback() {
+            @Override
+            public void onResult(int code, String msg, Map<String, Object> params) {
+                System.out.println("--------------kickOut-------------");
+                System.out.println(code);
+                System.out.println(msg);
+                System.out.println(params);
+                System.out.println("--------------kickOut-------------");
+                if (code != 0) {
+                    promise.resolve(false);
+                } else {
+                    promise.resolve(true);
+                }
+            }
+        });
+    }
+
+    // 切换麦克风开关
+    @ReactMethod
+    public void switchMicrophone(String aliRoomId, Boolean open) {
+        ARTCVoiceRoomEngine voiceRoom = roomMap.get(aliRoomId);
+        voiceRoom.switchMicrophone(open);
     }
 
     // 发送消息
