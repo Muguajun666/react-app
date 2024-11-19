@@ -5,7 +5,7 @@
  * @format
  */
 
-import React from 'react'
+import React, { useEffect } from 'react'
 import { NavigationContainer } from '@react-navigation/native'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import TestScreen from './views/Test'
@@ -19,7 +19,16 @@ import { NativeModules } from 'react-native'
 const Stack = createNativeStackNavigator()
 
 function HomeScreen() {
-	const { VoiceRoomModule } = NativeModules
+	const { VoiceRoomModule, RNNavigationModule } = NativeModules
+
+	useEffect(() => {
+		initNavigation()
+	}, [])
+
+	const initNavigation = async () => {
+		const res = await RNNavigationModule.getInitialNavigationParams()
+		console.log('initNavigation', res)
+	}
 
 	return (
 		<View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
