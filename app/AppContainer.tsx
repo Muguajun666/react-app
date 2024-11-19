@@ -10,6 +10,7 @@ import { NavigationContainer } from '@react-navigation/native'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import TestScreen from './views/Test'
 import VoiceRoomScreen from './views/VoiceRoom'
+import PartySetterScreen from './views/PartySetter'
 import { Button, Text, View } from 'react-native'
 import Navigation from './navigation/appNavigation'
 // import EmojiSelector, { Categories } from 'react-native-emoji-selector'
@@ -34,7 +35,7 @@ function HomeScreen() {
 			<View className="mt-4">
 				<Button
 					title="测试arr"
-					onPress={async() => {
+					onPress={async () => {
 						console.log(VoiceRoomModule.helloWorld())
 						const res = await VoiceRoomModule.helloWorldPromise()
 						console.log(res)
@@ -62,6 +63,11 @@ const AppContainer = (): React.JSX.Element => {
 				<Stack.Screen
 					name="VoiceRoom"
 					component={VoiceRoomScreen}
+					options={{ headerShown: false }}
+				/>
+				<Stack.Screen
+					name="PartySetter"
+					component={PartySetterScreen}
 					options={{ headerShown: false }}
 				/>
 			</Stack.Navigator>

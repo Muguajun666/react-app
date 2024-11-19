@@ -19,7 +19,6 @@ import com.facebook.react.bridge.ReactContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
 
-import com.facebook.react.bridge.Callback;
 import com.facebook.react.bridge.Promise;
 import com.facebook.react.bridge.ReadableMap;
 import com.facebook.react.bridge.Arguments;
@@ -32,10 +31,20 @@ import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.bridge.WritableNativeMap;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
 
+import java.io.File;
+import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
 
 public class VoiceRoomModule extends ReactContextBaseJavaModule {
 
@@ -465,6 +474,32 @@ public class VoiceRoomModule extends ReactContextBaseJavaModule {
                 promise.resolve(null);
             }
         });
+    }
+
+    @ReactMethod
+    public void uploadFile(ReadableMap fileInfo, Promise promise) {
+        String url = fileInfo.getString("url");
+        String contentType = fileInfo.getString("contentType");
+        String filePath = fileInfo.getString("filePath");
+
+        OkHttpClient client = new OkHttpClient();
+
+        File file = new File(filePath);
+
+        Request putRequest = new Request.Builder().url(url).put(RequestBody.create(MediaType.parse(contentType), file)).build();
+
+        client.newCall(putRequest).enqueue(new Callback() {
+            @Override
+            public void onFailure(@NonNull Call call, @NonNull IOException e) {
+                promise.resolve(false);
+            }
+
+            @Override
+            public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
+                promise.resolve(true);
+            }
+        });
+
     }
 
     @ReactMethod(isBlockingSynchronousMethod = true)

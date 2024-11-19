@@ -1,6 +1,6 @@
 import request from '../request'
 import { APP_API_PREFIX } from '@env'
-import { IGetRoomListParams, IGetRtcTokenParams, IJoinRoomParams } from '../type'
+import { ICreateRoomParams, IGetRoomListParams, IGetRtcTokenParams, IJoinRoomParams } from '../type'
 
 export const getRoomListApi = (params: IGetRoomListParams) => {
 	return request.get(APP_API_PREFIX + 'voiceRoom/page', { params })
@@ -16,4 +16,8 @@ export const getRtcTokenApi = (params: IGetRtcTokenParams) => {
 
 export const getImTokenApi = () => {
 	return request.get(APP_API_PREFIX + 'voiceRoom/imToken')
+}
+
+export const createOrSetRoomApi = (params: ICreateRoomParams) => {
+	return request.post(APP_API_PREFIX + 'voiceRoom', params)
 }

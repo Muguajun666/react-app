@@ -37,6 +37,16 @@ export interface IGetRtcTokenParams {
 	roomId: string
 }
 
+export interface ICreateRoomParams {
+	coverImg: string
+	id?: number
+	isPrivate?: boolean
+	label?: number
+	language: string
+	password?: string
+	subject: string
+}
+
 export type TRoomListItem = {
 	aliRoomId?: string
 	coverImg?: string | null

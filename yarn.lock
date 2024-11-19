@@ -3256,6 +3256,7 @@ __metadata:
     clsx: ^2.1.1
     eslint: ^8.19.0
     jest: ^29.6.3
+    jsencrypt: ^3.3.2
     nativewind: ^4.1.23
     prettier: 2.8.8
     react: 18.3.1
@@ -3265,6 +3266,7 @@ __metadata:
     react-native-easy-toast: ^2.3.0
     react-native-emoji-selector: ^0.2.0
     react-native-gesture-handler: ^2.20.2
+    react-native-image-picker: ^7.1.2
     react-native-modal: ^13.0.1
     react-native-reanimated: ^3.16.1
     react-native-safe-area-context: ^4.12.0
@@ -7490,6 +7492,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"jsencrypt@npm:^3.3.2":
+  version: 3.3.2
+  resolution: "jsencrypt@npm:3.3.2"
+  checksum: b78e896dc1c3d6bb2e9ce2437e679c1abd4dda098c29f3d1d00024543b03f7e962d0be08b5c1024a94e400c32eb40c720f8293cb5fe6b4b3859cf6b31eabf6a4
+  languageName: node
+  linkType: hard
+
 "jsesc@npm:^3.0.2, jsesc@npm:~3.0.2":
   version: 3.0.2
   resolution: "jsesc@npm:3.0.2"
@@ -9539,6 +9548,16 @@ __metadata:
     react: "*"
     react-native: "*"
   checksum: 8d9e7496615dad4e6bb6dd1c750c2d3b2e57c6173a1d466b4503b28b159b1dbbb1e7527c3d4bda12324422200c07835f34d81c9bd3cd1b7f594b22949bef274a
+  languageName: node
+  linkType: hard
+
+"react-native-image-picker@npm:^7.1.2":
+  version: 7.1.2
+  resolution: "react-native-image-picker@npm:7.1.2"
+  peerDependencies:
+    react: "*"
+    react-native: "*"
+  checksum: af52328b7cb06c28549442f0d923cfa92dde8d5a968a642336df4c882f81adbf0e5e606a14de27f96883a76fa1e03230061c4080011c9107942edebc8e09c478
   languageName: node
   linkType: hard
 

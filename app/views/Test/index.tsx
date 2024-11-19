@@ -45,6 +45,7 @@ const Test = (): React.JSX.Element => {
 	const loginHandle = async () => {
 		// const res = (await loginApi({ loginType: 'TEMP', phoneMac: 'd2b82b944510dc0c' })) as IResponse<any>
 		const res = (await loginApi({ loginType: 'TEMP', phoneMac: '000000' })) as IResponse<any>
+		// const res = (await loginApi({ loginType: 'TEMP', phoneMac: 'liushuli' })) as IResponse<any>
 		if (res.success) {
 			dispatch(setToken({ token: res.object }))
 			getUserInfo()
@@ -57,7 +58,8 @@ const Test = (): React.JSX.Element => {
 
 	const createVoiceRoom = () => {
 		console.log('创建房间')
-		VoiceRoomModule.createVoiceRoom()
+		// VoiceRoomModule.createVoiceRoom()
+		Navigation.navigate('PartySetter')
 	}
 
 	const getUserInfo = async () => {
@@ -164,7 +166,7 @@ const Test = (): React.JSX.Element => {
 					<View className="h-10 mt-2 flex flex-row justify-around items-center">
 						<Button title="获取房间" onPress={getVoiceRooms}></Button>
 						<Button title="获取用户信息" onPress={getUserInfo}></Button>
-						{/* <Button title="创建房间" onPress={createVoiceRoom}></Button> */}
+						<Button title="创建房间" onPress={createVoiceRoom}></Button>
 						<Button title="清除Token" onPress={clearTokenHandle}></Button>
 					</View>
 				</View>
