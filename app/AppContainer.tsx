@@ -15,6 +15,7 @@ import { Button, Text, View } from 'react-native'
 import Navigation from './navigation/appNavigation'
 // import EmojiSelector, { Categories } from 'react-native-emoji-selector'
 import { NativeModules } from 'react-native'
+import Loading from './components/Loading'
 
 const Stack = createNativeStackNavigator()
 
@@ -28,35 +29,25 @@ function HomeScreen() {
 	const initNavigation = async () => {
 		const res = await RNNavigationModule.getInitialNavigationParams()
 		console.log('initNavigation', res)
+		const { screen, jsonParams } = res
+		if (screen) {
+			Navigation.navigate(screen, jsonParams)
+		}
 	}
 
 	return (
-		<View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-			<Text>Home Screen</Text>
-			<View className="mt-4">
-				<Button
-					title="跳转至测试页"
-					onPress={() => {
-						Navigation.navigate('Test')
-					}}
-				></Button>
-			</View>
-			<View className="mt-4">
-				<Button
-					title="测试arr"
-					onPress={async () => {
-						console.log(VoiceRoomModule.helloWorld())
-						const res = await VoiceRoomModule.helloWorldPromise()
-						console.log(res)
-						// const res2 = await VoiceRoomModule.callAarMethod()
-						// console.log(res2)
-					}}
-				></Button>
-			</View>
-			{/* <EmojiSelector
-				onEmojiSelected={(emoji) => console.log(emoji)}
-			/> */}
-		</View>
+		// <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+		// 	<Text>Home Screen</Text>
+		// 	<View className="mt-4">
+		// 		<Button
+		// 			title="跳转至测试页"
+		// 			onPress={() => {
+		// 				Navigation.navigate('Test')
+		// 			}}
+		// 		></Button>
+		// 	</View>
+		// </View>
+		<Loading/>
 	)
 }
 
@@ -67,7 +58,7 @@ const AppContainer = (): React.JSX.Element => {
 				initialRouteName="Home"
 				screenOptions={{ headerShown: true, animation: 'none' }}
 			>
-				<Stack.Screen name="Home" component={HomeScreen} />
+				<Stack.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
 				<Stack.Screen name="Test" component={TestScreen} />
 				<Stack.Screen
 					name="VoiceRoom"

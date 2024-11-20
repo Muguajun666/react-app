@@ -4,3 +4,5 @@ declare module '@env' {
   export const APP_API_PREFIX: string;
   export const FILE_API_PREFIX: string;
 }
+
+declare module 'react-native-loading-dots'

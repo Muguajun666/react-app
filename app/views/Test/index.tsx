@@ -43,8 +43,8 @@ const Test = (): React.JSX.Element => {
 	const [currentRoom, setCurrentRoom] = useState<TRoomListItem>({})
 
 	const loginHandle = async () => {
-		// const res = (await loginApi({ loginType: 'TEMP', phoneMac: 'd2b82b944510dc0c' })) as IResponse<any>
-		const res = (await loginApi({ loginType: 'TEMP', phoneMac: '000000' })) as IResponse<any>
+		const res = (await loginApi({ loginType: 'TEMP', phoneMac: 'd2b82b944510dc0c' })) as IResponse<any>
+		// const res = (await loginApi({ loginType: 'TEMP', phoneMac: '000000' })) as IResponse<any>
 		// const res = (await loginApi({ loginType: 'TEMP', phoneMac: 'liushuli' })) as IResponse<any>
 		if (res.success) {
 			dispatch(setToken({ token: res.object }))

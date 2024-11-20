@@ -2,7 +2,7 @@ import { Image, NativeModules, Pressable, StyleSheet, Text, View } from 'react-n
 import Navigation from '../../navigation/appNavigation'
 import Icon from '../../components/Icon'
 import { Input } from '../../components/ui/input'
-import React, { useRef } from 'react'
+import React, { useEffect, useRef } from 'react'
 import { labelConfig, languageConfig } from './config'
 import Switch from '../../components/Switch'
 import LanguageBottomSheet from './components/LanguageBottomSheet'
@@ -15,8 +15,32 @@ import EventEmitter from '../../utils/emitter'
 import { ICreateRoomParams } from '../../services/type'
 import { createOrSetRoomApi } from '../../services/api/voice'
 import { rsaEncrypt } from '../../utils/crypto'
+import { useRoute } from '@react-navigation/native'
+
+export type PartySetterParams = {
+	key: string
+	name: string
+	params: ICreateRoomParams
+}
 
 const PartySetter = (): React.JSX.Element => {
+
+	const { params } = useRoute<PartySetterParams>()
+
+	const { coverImg, id, isPrivate, label, language, password, subject } = params
+
+	useEffect(() => {
+		if (id) {
+			setMode('edit')
+			setRoomName(subject)
+			setLabelValue(label!)
+			setPasswordChecked(isPrivate!)
+			setPasswordValue(password!)
+			setSelectedCover(coverImg!)
+			setLanguageValue(language!)
+		}
+	}, [])
+
 	const { VoiceRoomModule } = NativeModules
 
 	const languageBottomSheetRef = useRef<BottomSheet>(null)
@@ -31,7 +55,7 @@ const PartySetter = (): React.JSX.Element => {
 
 	const [passwordChecked, setPasswordChecked] = React.useState(false)
 
-	const [password, setPassword] = React.useState('')
+	const [passwordValue, setPasswordValue] = React.useState('')
 
 	const [selectedCover, setSelectedCover] = React.useState('')
 
@@ -102,7 +126,7 @@ const PartySetter = (): React.JSX.Element => {
       EventEmitter.emit(LISTENER, { message: '请选择标签！' })
       return
     }
-    if (passwordChecked && !password) {
+    if (passwordChecked && !passwordValue) {
       EventEmitter.emit(LISTENER, { message: '请输入密码！' })
       return
     }
@@ -113,7 +137,7 @@ const PartySetter = (): React.JSX.Element => {
         isPrivate: passwordChecked,
         label: labelValue,
         language: languageValue,
-        password: passwordChecked ? rsaEncrypt(password) : '',
+        password: passwordChecked ? rsaEncrypt(passwordValue) : '',
         subject: roomName
       }
 
@@ -224,9 +248,9 @@ const PartySetter = (): React.JSX.Element => {
 							style={styles.input}
 							placeholder="Set a private party password"
 							placeholderTextColor={'#969696FF'}
-							value={password}
+							value={passwordValue}
 							onChangeText={(text) => {
-								setPassword(text)
+								setPasswordValue(text)
 							}}
 						/>
 					</View>

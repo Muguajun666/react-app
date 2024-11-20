@@ -8,8 +8,7 @@ import {
 	Text,
 	View,
 	NativeModules,
-	DeviceEventEmitter,
-	ActivityIndicator
+	DeviceEventEmitter
 } from 'react-native'
 import { useRoute } from '@react-navigation/native'
 import { BlurView } from '@react-native-community/blur'
@@ -30,6 +29,7 @@ import BottomSheet from '@gorhom/bottom-sheet'
 import UserToSelfSheet from './components/BottomSheet/UserToSelfSheet'
 import UserToUsedSeatSheet from './components/BottomSheet/UserToUsedSeatSheet'
 import MasterToUsedSeatSheet from './components/BottomSheet/MasterToUsedSeatSheet'
+import Loading from '../../components/Loading'
 
 export type VoiceRoomParams = {
 	key: string
@@ -54,7 +54,18 @@ const VoiceRoom = (): React.JSX.Element => {
 
 	const { params } = useRoute<VoiceRoomParams>()
 
-	const { coverImg, subject: roomName, aliRoomId: roomId, heatValue, createUser } = params
+	const {
+		coverImg,
+		subject: roomName,
+		aliRoomId: roomId,
+		heatValue,
+		createUser,
+		id,
+		isPrivate,
+		language,
+		password,
+		label
+	} = params
 
 	const [selectedUser, setSelectedUser] = useState<UserInfo>({})
 
@@ -98,6 +109,22 @@ const VoiceRoom = (): React.JSX.Element => {
 			DeviceEventEmitter.removeAllListeners('onMicUserMicrophoneChanged')
 		}
 	}, [])
+
+	const setRoomHandle = () => {
+		if (userInfo.id !== createUser) {
+			EventEmitter.emit(LISTENER, { message: '您不是房主，无法修改房间设置' })
+		} else {
+			Navigation.navigate('PartySetter', {
+				coverImg,
+				id,
+				isPrivate,
+				subject: roomName,
+				language,
+				password,
+				label
+			})
+		}
+	}
 
 	const joinRoomHandle = async () => {
 		console.log('joinRoomHandle')
@@ -506,7 +533,7 @@ const VoiceRoom = (): React.JSX.Element => {
 									<Text style={{ color: '#fff' }}>{audienceCount}</Text>
 								</View>
 							</View>
-							<Pressable>
+							<Pressable onPress={setRoomHandle}>
 								<Icon
 									iconFamily="Ionicons"
 									name="settings-outline"
@@ -637,7 +664,7 @@ const VoiceRoom = (): React.JSX.Element => {
 					/>
 				</View>
 			) : (
-				<ActivityIndicator size="large" animating={!isJoin} className="mt-12" />
+				<Loading />
 			)}
 		</>
 	)
