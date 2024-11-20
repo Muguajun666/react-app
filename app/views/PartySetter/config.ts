@@ -15,8 +15,8 @@ export const labelConfig = [
 
 export const languageConfig = [
 	{
-		value: 'en-US',
-		label: 'English'
+		label: 'English',
+		value: 'en-US'
 	},
 	{
 		label: 'Tiếng Việt',
