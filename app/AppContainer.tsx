@@ -11,6 +11,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import TestScreen from './views/Test'
 import VoiceRoomScreen from './views/VoiceRoom'
 import PartySetterScreen from './views/PartySetter'
+import AddressScreen from './views/Address'
 import { Button, Text, View } from 'react-native'
 import Navigation from './navigation/appNavigation'
 // import EmojiSelector, { Categories } from 'react-native-emoji-selector'
@@ -27,7 +28,7 @@ function HomeScreen() {
 	}, [])
 
 	const initNavigation = async () => {
-		const res = await RNNavigationModule.getInitialNavigationParams()
+		const res = await RNNavigationModule?.getInitialNavigationParams()
 		console.log('initNavigation', res)
 		const { screen, jsonParams } = res
 		if (screen) {
@@ -36,18 +37,18 @@ function HomeScreen() {
 	}
 
 	return (
-		// <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-		// 	<Text>Home Screen</Text>
-		// 	<View className="mt-4">
-		// 		<Button
-		// 			title="跳转至测试页"
-		// 			onPress={() => {
-		// 				Navigation.navigate('Test')
-		// 			}}
-		// 		></Button>
-		// 	</View>
-		// </View>
-		<Loading/>
+		<View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+			<Text>Home Screen</Text>
+			<View className="mt-4">
+				<Button
+					title="跳转至测试页"
+					onPress={() => {
+						Navigation.navigate('Test')
+					}}
+				></Button>
+			</View>
+		</View>
+		// <Loading/>
 	)
 }
 
@@ -68,6 +69,11 @@ const AppContainer = (): React.JSX.Element => {
 				<Stack.Screen
 					name="PartySetter"
 					component={PartySetterScreen}
+					options={{ headerShown: false }}
+				/>
+				<Stack.Screen
+					name="Address"
+					component={AddressScreen}
 					options={{ headerShown: false }}
 				/>
 			</Stack.Navigator>

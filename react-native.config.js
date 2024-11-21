@@ -1,8 +1,8 @@
 module.exports = {
     project: {
       android: {
-        sourceDir: './playGoAndroid',
-        // sourceDir: './android',
+        // sourceDir: './playGoAndroid',
+        sourceDir: './android',
       },
     },
   };

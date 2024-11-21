@@ -47,6 +47,13 @@ export interface ICreateRoomParams {
 	subject: string
 }
 
+export interface IAddOrEditAddressParams {
+	address: string
+	id?: number
+	receiver: string
+	telephone: string
+}
+
 export type TRoomListItem = {
 	aliRoomId?: string
 	coverImg?: string | null
@@ -88,4 +95,12 @@ export type ImTokenObject = {
 	role: string
 	timestamp: string
 	userId: string
+}
+
+export type TAddressList = {
+	address: string
+	id: number
+	isDefault: boolean
+	receiver: string
+	telephone: string
 }

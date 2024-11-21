@@ -116,6 +116,14 @@ const Test = (): React.JSX.Element => {
 		return !!token
 	}
 
+	const goMyAddress = () => {
+		Navigation.navigate('Address')
+	}
+
+	const goMyOrder = () => {
+		Navigation.navigate('Order')
+	}
+
 	useEffect(() => {
 		const hasToken = tokenCheckHandle()
 		if (!hasToken) {
@@ -168,6 +176,10 @@ const Test = (): React.JSX.Element => {
 						<Button title="获取用户信息" onPress={getUserInfo}></Button>
 						<Button title="创建房间" onPress={createVoiceRoom}></Button>
 						<Button title="清除Token" onPress={clearTokenHandle}></Button>
+					</View>
+					<View className="h-10 mt-2 flex flex-row justify-around items-center">
+						<Button title="我的地址" onPress={goMyAddress}></Button>
+						<Button title="我的订单" onPress={goMyOrder}></Button>
 					</View>
 				</View>
 			</ScrollView>

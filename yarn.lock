@@ -3262,6 +3262,7 @@ __metadata:
     react: 18.3.1
     react-devtools: ^6.0.1
     react-native: 0.75.2
+    react-native-dialog: ^9.3.0
     react-native-dotenv: ^3.4.11
     react-native-easy-toast: ^2.3.0
     react-native-emoji-selector: ^0.2.0
@@ -9500,6 +9501,15 @@ __metadata:
     react-native-svg:
       optional: true
   checksum: b86b44620c8d572e58fb860b14dc271e492d76f1050fe649b59c5451fe96ceaf81fb472f0ff37ca29c83f022d07b428be5f57ffd50a68678fb8145c11b03b03e
+  languageName: node
+  linkType: hard
+
+"react-native-dialog@npm:^9.3.0":
+  version: 9.3.0
+  resolution: "react-native-dialog@npm:9.3.0"
+  peerDependencies:
+    react-native: ">=0.63.0"
+  checksum: 148fcd9e4cb3001a8bbed02f465833329a83bc60efbf763a9bf227ec81208a41e03055e8bc213aea838933878f3cc7c3ca18a15446e819c17509cad75362d7ca
   languageName: node
   linkType: hard
 
