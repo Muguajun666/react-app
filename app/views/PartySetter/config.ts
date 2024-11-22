@@ -27,7 +27,7 @@ export const languageConfig = [
 		value: 'tl-PH'
 	},
 	{
-		label: 'IndonesiaName',
+		label: 'Indonesia',
 		value: 'id-ID'
 	},
 	{

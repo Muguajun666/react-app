@@ -41,7 +41,7 @@ const PartySetter = (): React.JSX.Element => {
 		}
 	}, [])
 
-	const { VoiceRoomModule } = NativeModules
+	const { VoiceRoomModule, RNNavigationModule } = NativeModules
 
 	const languageBottomSheetRef = useRef<BottomSheet>(null)
 
@@ -60,7 +60,8 @@ const PartySetter = (): React.JSX.Element => {
 	const [selectedCover, setSelectedCover] = React.useState('')
 
 	const backHandle = () => {
-		Navigation.back()
+		// Navigation.back()
+		RNNavigationModule.backToAndroid()
 	}
 	const languageHandle = () => {
 		languageBottomSheetRef.current?.expand()
