@@ -54,6 +54,14 @@ export interface IAddOrEditAddressParams {
 	telephone: string
 }
 
+export interface IApplyOrderParams {
+	id: number
+	address?: string
+	orderRemark?: string
+	receiver?: string
+	telephone?: string
+}
+
 export type TRoomListItem = {
 	aliRoomId?: string
 	coverImg?: string | null
@@ -103,4 +111,25 @@ export type TAddressList = {
 	isDefault: boolean
 	receiver: string
 	telephone: string
+}
+
+export type TOrderList = {
+	id: string
+	goodsId: number
+	categoryId: number
+	categoryName: string | null
+	categoryImg: string | null
+	goodsName: string
+	goodsImg: string
+	goodsPrice: number
+	integralPrice: number
+	recycleIntegralPrice: number
+	isVirtual: boolean
+	msgType: string | null
+	orderStatus: string
+	orderDesc: string | null
+	orderRemark: string | null
+	expressCompany: string | null
+	expressNo: string | null
+	orderRefusedReason: string | null
 }

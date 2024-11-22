@@ -4,6 +4,7 @@ import {
 	NativeScrollEvent,
 	NativeSyntheticEvent,
 	Pressable,
+	RefreshControl,
 	ScrollView,
 	StyleSheet,
 	Text,
@@ -29,7 +30,7 @@ const Address = (): React.JSX.Element => {
 	const [addressList, setAddressList] = useState<TAddressList[]>([])
 
 	const [pageNum, setPageNum] = useState(1)
-	const [pageSize, setPageSize] = useState(5)
+	const [pageSize, setPageSize] = useState(10)
 	const [pageTotal, setPageTotal] = useState(0)
 
 	const [showSetter, setShowSetter] = useState(false)
@@ -40,10 +41,16 @@ const Address = (): React.JSX.Element => {
 	const [selectedId, setSelectedId] = useState(0)
 
 	const [isLoading, setLoading] = useState(false)
+	const [refreshing, setRefreshing] = useState(false)
 
 	useEffect(() => {
 		getAddressList(true)
 	}, [])
+
+	const onRefresh = () => {
+		setRefreshing(true)
+		getAddressList(true)
+	}
 
 	const getAddressList = async (reset: boolean = false) => {
 		if (reset) {
@@ -60,7 +67,6 @@ const Address = (): React.JSX.Element => {
 		}
 
 		const res: any = await getReceiveAddressApi(paramsStr)
-		console.log(res.object.list)
 		if (res.success) {
 			if (reset) {
 				setAddressList(res.object.list)
@@ -72,6 +78,7 @@ const Address = (): React.JSX.Element => {
 			setPageTotal(res.object.total)
 			setPageNum((prev) => prev + 1)
 			setLoading(false)
+			setRefreshing(false)
 		}
 	}
 
@@ -139,7 +146,6 @@ const Address = (): React.JSX.Element => {
 
 		if (offset >= maxScroll) {
 			console.log('Reached bottom!')
-			// 在这里执行你的触底回调
 			if (addressList.length < pageTotal) {
 				getAddressList()
 			}
@@ -160,7 +166,19 @@ const Address = (): React.JSX.Element => {
 			) : (
 				<View style={styles.addressContainer}>
 					{addressList.length > 0 ? (
-						<ScrollView onScroll={scrollHandle} className="w-full" style={{ maxHeight: 560 }}>
+						<ScrollView
+							refreshControl={
+								<RefreshControl
+									refreshing={refreshing}
+									onRefresh={onRefresh}
+									colors={['#34c759FF']}
+									title="正在加载..."
+								/>
+							}
+							onScroll={scrollHandle}
+							className="w-full"
+							style={{ maxHeight: 560 }}
+						>
 							{addressList.map((item: TAddressList, index) => {
 								return (
 									<View

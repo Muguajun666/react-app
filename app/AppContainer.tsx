@@ -12,6 +12,7 @@ import TestScreen from './views/Test'
 import VoiceRoomScreen from './views/VoiceRoom'
 import PartySetterScreen from './views/PartySetter'
 import AddressScreen from './views/Address'
+import OrderScreen from './views/Order'
 import { Button, Text, View } from 'react-native'
 import Navigation from './navigation/appNavigation'
 // import EmojiSelector, { Categories } from 'react-native-emoji-selector'
@@ -74,6 +75,11 @@ const AppContainer = (): React.JSX.Element => {
 				<Stack.Screen
 					name="Address"
 					component={AddressScreen}
+					options={{ headerShown: false }}
+				/>
+				<Stack.Screen
+					name="Order"
+					component={OrderScreen}
 					options={{ headerShown: false }}
 				/>
 			</Stack.Navigator>
