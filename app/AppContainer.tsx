@@ -37,7 +37,9 @@ function HomeScreen() {
 		const res = await RNNavigationModule.getInitialNavigationParams()
 		console.log('initNavigation', res)
 		const { screen, jsonParams } = res
-		if (screen) {
+		if (!screen || (screen === 'Home' && jsonParams === 'preload')) {
+			RNNavigationModule.backToAndroid()
+		} else {
 			const token = await RNNavigationModule.getParamsByTag('token')
 			dispatch(setToken({ token }))
 			const jsonUserInfo = await RNNavigationModule.getParamsByTag('userInfo')
