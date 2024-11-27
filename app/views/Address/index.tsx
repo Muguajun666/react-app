@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import {
 	Image,
+	NativeModules,
 	NativeScrollEvent,
 	NativeSyntheticEvent,
 	Pressable,
@@ -27,6 +28,8 @@ import { LISTENER } from '../../components/Toast'
 import EventEmitter from '../../utils/emitter'
 
 const Address = (): React.JSX.Element => {
+	const { RNNavigationModule } = NativeModules
+
 	const [addressList, setAddressList] = useState<TAddressList[]>([])
 
 	const [pageNum, setPageNum] = useState(1)
@@ -83,7 +86,8 @@ const Address = (): React.JSX.Element => {
 	}
 
 	const backHandle = () => {
-		Navigation.back()
+		// Navigation.back()
+		RNNavigationModule.backToAndroid()
 	}
 
 	const addHandle = () => {

@@ -21,6 +21,8 @@ import Loading from './components/Loading'
 import { useDispatch, useSelector } from 'react-redux'
 import { setToken } from './store/reducers/app'
 import { setUser } from './store/reducers/user'
+import { IResponse, ImTokenObject, RtcTokenObject, TRoomListItem } from './services/type'
+import { getImTokenApi, getRtcTokenApi, joinRoomApi } from './services/api/voice'
 
 const Stack = createNativeStackNavigator()
 
@@ -46,7 +48,45 @@ function HomeScreen() {
 			dispatch(setUser({ userInfo: JSON.parse(jsonUserInfo) }))
 			console.log('token', token)
 			console.log('userInfo', jsonUserInfo)
-			Navigation.navigate(screen, jsonParams)
+
+			// 进入语音房
+			if (screen === 'VoiceRoom') {
+				creatRoomHandle(JSON.parse(jsonParams))
+			} else {
+				Navigation.navigate(screen, jsonParams)
+			}
+		}
+	}
+
+	const creatRoomHandle = async (room: TRoomListItem) => {
+		console.log('加入房间', room)
+		const userInfo = useSelector((state: any) => state.user.userInfo)
+
+		const joinRoomRes = (await joinRoomApi({ id: room.id! })) as IResponse<any>
+		console.log('joinRoomRes', joinRoomRes)
+		if (!joinRoomRes.success) return
+
+		const rtctokenRes = (await getRtcTokenApi({
+			roomId: room.aliRoomId!
+		})) as IResponse<RtcTokenObject>
+		console.log('rtctokenRes', rtctokenRes)
+		if (!rtctokenRes.success) return
+
+		const imTokenRes = (await getImTokenApi()) as IResponse<ImTokenObject>
+		console.log('imTokenRes', imTokenRes)
+		if (!imTokenRes.success) return
+
+		const creatRoomRes = await VoiceRoomModule.createVoiceRoom(
+			userInfo,
+			imTokenRes.object,
+			rtctokenRes.object,
+			room
+		)
+
+		const { result, msg } = creatRoomRes
+		console.log('creatRoomRes', result, msg)
+		if (result) {
+			Navigation.navigate('VoiceRoom', room)
 		}
 	}
 

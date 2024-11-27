@@ -38,7 +38,7 @@ export type VoiceRoomParams = {
 }
 
 const VoiceRoom = (): React.JSX.Element => {
-	const { VoiceRoomModule } = NativeModules
+	const { VoiceRoomModule, RNNavigationModule } = NativeModules
 
 	const userInfo = useSelector((state: any) => state.user.userInfo)
 
@@ -360,7 +360,8 @@ const VoiceRoom = (): React.JSX.Element => {
 		const leaveRoomRes = await VoiceRoomModule.leaveRoom(roomId)
 
 		if (leaveRoomRes) {
-			Navigation.back()
+			// Navigation.back()
+			RNNavigationModule.backToAndroid()
 		}
 	}
 

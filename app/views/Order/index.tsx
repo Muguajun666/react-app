@@ -1,5 +1,6 @@
 import {
 	Image,
+	NativeModules,
 	NativeScrollEvent,
 	NativeSyntheticEvent,
 	Pressable,
@@ -24,6 +25,8 @@ import AddressBottomSheet from './components/AddressBottomSheet'
 import BottomSheet from '@gorhom/bottom-sheet'
 
 const Order = (): React.JSX.Element => {
+	const { RNNavigationModule } = NativeModules
+
 	const addressBottomSheetRef = useRef<BottomSheet>(null)
 
 	const [tabValue, setTabValue] = useState(0)
@@ -90,7 +93,8 @@ const Order = (): React.JSX.Element => {
 	}
 
 	const backHandle = () => {
-		Navigation.back()
+		// Navigation.back()
+		RNNavigationModule.backToAndroid()
 	}
 
 	const scrollHandle = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
