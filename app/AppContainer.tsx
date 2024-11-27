@@ -28,6 +28,8 @@ const Stack = createNativeStackNavigator()
 
 function HomeScreen() {
 	const { VoiceRoomModule, RNNavigationModule } = NativeModules
+	
+	const userInfo = useSelector((state: any) => state.user.userInfo)
 
 	const dispatch = useDispatch()
 
@@ -60,7 +62,6 @@ function HomeScreen() {
 
 	const creatRoomHandle = async (room: TRoomListItem) => {
 		console.log('加入房间', room)
-		const userInfo = useSelector((state: any) => state.user.userInfo)
 
 		const joinRoomRes = (await joinRoomApi({ id: room.id! })) as IResponse<any>
 		console.log('joinRoomRes', joinRoomRes)
