@@ -53,7 +53,7 @@ function HomeScreen() {
 			if (screen === 'VoiceRoom') {
 				creatRoomHandle(JSON.parse(jsonParams))
 			} else {
-				Navigation.navigate(screen, jsonParams)
+				Navigation.replace(screen, jsonParams)
 			}
 		}
 	}
@@ -86,7 +86,7 @@ function HomeScreen() {
 		const { result, msg } = creatRoomRes
 		console.log('creatRoomRes', result, msg)
 		if (result) {
-			Navigation.navigate('VoiceRoom', room)
+			Navigation.replace('VoiceRoom', room)
 		}
 	}
 
