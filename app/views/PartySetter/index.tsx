@@ -146,7 +146,8 @@ const PartySetter = (): React.JSX.Element => {
       console.log('createOrSetRoomApi', result)
 
       if (result.success) {
-        Navigation.navigate('Test')
+				// todo 返回
+        RNNavigationModule.backToAndroid()
       }
 
     } else if (mode === 'edit') {
