@@ -21,3 +21,7 @@ export const getImTokenApi = () => {
 export const createOrSetRoomApi = (params: ICreateRoomParams) => {
 	return request.post(APP_API_PREFIX + 'voiceRoom', params)
 }
+
+export const getMyOwnRoomApi = () => {
+  return request.get(APP_API_PREFIX + 'voiceRoom/me')
+}

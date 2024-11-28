@@ -12,10 +12,23 @@ import { getUploadTempAuthUrl } from '../../services/api/upload'
 import { IMG_BASE_URL } from '@env'
 import { LISTENER } from '../../components/Toast'
 import EventEmitter from '../../utils/emitter'
-import { ICreateRoomParams } from '../../services/type'
-import { createOrSetRoomApi } from '../../services/api/voice'
+import {
+	ICreateRoomParams,
+	IResponse,
+	ImTokenObject,
+	RtcTokenObject,
+	TRoomListItem
+} from '../../services/type'
+import {
+	createOrSetRoomApi,
+	getImTokenApi,
+	getMyOwnRoomApi,
+	getRtcTokenApi,
+	joinRoomApi
+} from '../../services/api/voice'
 import { rsaEncrypt } from '../../utils/crypto'
 import { useRoute } from '@react-navigation/native'
+import { useSelector } from 'react-redux'
 
 export type PartySetterParams = {
 	key: string
@@ -24,10 +37,11 @@ export type PartySetterParams = {
 }
 
 const PartySetter = (): React.JSX.Element => {
-
 	const { params } = useRoute<PartySetterParams>()
 
 	const { coverImg, id, isPrivate, label, language, password, subject } = params
+
+	const userInfo = useSelector((state: any) => state.user.userInfo)
 
 	useEffect(() => {
 		if (id) {
@@ -45,7 +59,7 @@ const PartySetter = (): React.JSX.Element => {
 
 	const languageBottomSheetRef = useRef<BottomSheet>(null)
 
-  const [mode, setMode] = React.useState('create')
+	const [mode, setMode] = React.useState('create')
 
 	const [languageValue, setLanguageValue] = React.useState('en-US')
 
@@ -60,8 +74,11 @@ const PartySetter = (): React.JSX.Element => {
 	const [selectedCover, setSelectedCover] = React.useState('')
 
 	const backHandle = () => {
-		// Navigation.back()
-		RNNavigationModule.backToAndroid()
+		if (mode === 'edit') {
+			Navigation.back()
+		} else {
+			RNNavigationModule.backToAndroid()
+		}
 	}
 	const languageHandle = () => {
 		languageBottomSheetRef.current?.expand()
@@ -115,45 +132,94 @@ const PartySetter = (): React.JSX.Element => {
 
 	const confirmHandle = async () => {
 		console.log('confirmHandle')
-    if (!roomName) {
-      EventEmitter.emit(LISTENER, { message: '请输入房间名称！' })
-      return
-    }
-    if (!selectedCover) {
-      EventEmitter.emit(LISTENER, { message: '请选择封面！' })
-      return
-    }
-    if (labelValue === -1) {
-      EventEmitter.emit(LISTENER, { message: '请选择标签！' })
-      return
-    }
-    if (passwordChecked && !passwordValue) {
-      EventEmitter.emit(LISTENER, { message: '请输入密码！' })
-      return
-    }
+		if (!roomName) {
+			EventEmitter.emit(LISTENER, { message: '请输入房间名称！' })
+			return
+		}
+		if (!selectedCover) {
+			EventEmitter.emit(LISTENER, { message: '请选择封面！' })
+			return
+		}
+		if (labelValue === -1) {
+			EventEmitter.emit(LISTENER, { message: '请选择标签！' })
+			return
+		}
+		if (passwordChecked && !passwordValue) {
+			EventEmitter.emit(LISTENER, { message: '请输入密码！' })
+			return
+		}
 
-    if (mode === 'create') {
-      const params: ICreateRoomParams = {
-        coverImg: selectedCover,
-        isPrivate: passwordChecked,
-        label: labelValue,
-        language: languageValue,
-        password: passwordChecked ? rsaEncrypt(passwordValue) : '',
-        subject: roomName
-      }
+		if (mode === 'create') {
+			const params: ICreateRoomParams = {
+				coverImg: selectedCover,
+				isPrivate: passwordChecked,
+				label: labelValue,
+				language: languageValue,
+				password: passwordChecked ? rsaEncrypt(passwordValue) : '',
+				subject: roomName
+			}
 
-      const result: any = await createOrSetRoomApi(params)
-      console.log('createOrSetRoomApi', result)
+			const result: any = await createOrSetRoomApi(params)
+			console.log('createOrSetRoomApi', result)
 
-      if (result.success) {
-				// todo 返回
-        RNNavigationModule.backToAndroid()
-      }
+			if (result.success) {
+				// RNNavigationModule.backToAndroid()
+				// 直接进入房间
+				const myRoomRes: any = await getMyOwnRoomApi()
+				console.log('getMyOwnRoomApi', myRoomRes)
+				if (myRoomRes.success) {
+					const room = myRoomRes.object
+					creatRoomHandle(room)
+				}
+			}
+		} else if (mode === 'edit') {
+			const params: ICreateRoomParams = {
+				id: id,
+				coverImg: selectedCover,
+				isPrivate: passwordChecked,
+				label: labelValue,
+				language: languageValue,
+				password: passwordChecked ? rsaEncrypt(passwordValue) : '',
+				subject: roomName
+			}
 
-    } else if (mode === 'edit') {
-      // todo 房间内修改
-    }
+			const result: any = await createOrSetRoomApi(params)
+			console.log('createOrSetRoomApi', result)
+			if (result.success) {
+				Navigation.back()
+			}
+		}
+	}
 
+	const creatRoomHandle = async (room: TRoomListItem) => {
+		console.log('加入房间', room)
+
+		const joinRoomRes = (await joinRoomApi({ id: room.id! })) as IResponse<any>
+		console.log('joinRoomRes', joinRoomRes)
+		if (!joinRoomRes.success) return
+
+		const rtctokenRes = (await getRtcTokenApi({
+			roomId: room.aliRoomId!
+		})) as IResponse<RtcTokenObject>
+		console.log('rtctokenRes', rtctokenRes)
+		if (!rtctokenRes.success) return
+
+		const imTokenRes = (await getImTokenApi()) as IResponse<ImTokenObject>
+		console.log('imTokenRes', imTokenRes)
+		if (!imTokenRes.success) return
+
+		const creatRoomRes = await VoiceRoomModule.createVoiceRoom(
+			userInfo,
+			imTokenRes.object,
+			rtctokenRes.object,
+			room
+		)
+
+		const { result, msg } = creatRoomRes
+		console.log('creatRoomRes', result, msg)
+		if (result) {
+			Navigation.replace('VoiceRoom', room)
+		}
 	}
 
 	return (

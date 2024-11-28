@@ -365,6 +365,10 @@ const VoiceRoom = (): React.JSX.Element => {
 		}
 	}
 
+	const minimizeHandle = () => {
+		RNNavigationModule.backToAndroid()
+	}
+
 	const sendMessageHandle = async (message: string) => {
 		if (message) {
 			await VoiceRoomModule.sendMessage(roomId, message)
