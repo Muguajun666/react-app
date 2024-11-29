@@ -8,7 +8,8 @@ import {
 	Text,
 	View,
 	NativeModules,
-	DeviceEventEmitter
+	DeviceEventEmitter,
+	BackHandler
 } from 'react-native'
 import { useRoute } from '@react-navigation/native'
 import { BlurView } from '@react-native-community/blur'
@@ -355,19 +356,29 @@ const VoiceRoom = (): React.JSX.Element => {
 		}
 	}
 
-	const backHandle = async () => {
-		// 离开房间
-		const leaveRoomRes = await VoiceRoomModule.leaveRoom(roomId)
 
-		if (leaveRoomRes) {
-			// Navigation.back()
-			RNNavigationModule.backToAndroid()
-		}
-	}
 
-	const minimizeHandle = () => {
+	// const backHandle = async () => {
+	// 	const leaveRoomRes = await VoiceRoomModule.leaveRoom(roomId)
+
+	// 	if (leaveRoomRes) {
+	// 		RNNavigationModule.backToAndroid()
+	// 	}
+	// }
+
+	const minimizeHandle = async () => {
+		await VoiceRoomModule.minimizeRoom(roomId)
 		RNNavigationModule.backToAndroid()
 	}
+
+	useEffect(() => {
+		const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+			minimizeHandle()
+			return true
+		})
+
+		return () => backHandler.remove()
+	}, [])
 
 	const sendMessageHandle = async (message: string) => {
 		if (message) {
@@ -498,7 +509,7 @@ const VoiceRoom = (): React.JSX.Element => {
 					<View className="w-full flex flex-row items-center justify-between pt-1 pb-1">
 						{/* header-left */}
 						<View key={'header-left'} className="flex flex-row items-center">
-							<Pressable onPress={backHandle}>
+							<Pressable onPress={minimizeHandle}>
 								<Icon
 									iconFamily="AntDesign"
 									name="left"
