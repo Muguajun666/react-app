@@ -155,7 +155,7 @@ const PartySetter = (): React.JSX.Element => {
 				isPrivate: passwordChecked,
 				label: labelValue,
 				language: languageValue,
-				password: passwordChecked ? rsaEncrypt(passwordValue) : '',
+				password: passwordChecked ? passwordValue : '',
 				subject: roomName
 			}
 
@@ -179,7 +179,7 @@ const PartySetter = (): React.JSX.Element => {
 				isPrivate: passwordChecked,
 				label: labelValue,
 				language: languageValue,
-				password: passwordChecked ? rsaEncrypt(passwordValue) : '',
+				password: passwordChecked ? passwordValue : '',
 				subject: roomName
 			}
 
