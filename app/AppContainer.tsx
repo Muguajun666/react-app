@@ -88,6 +88,8 @@ function HomeScreen() {
 		console.log('creatRoomRes', result, msg)
 		if (result) {
 			Navigation.replace('VoiceRoom', room)
+		} else{
+			RNNavigationModule.backToAndroid()
 		}
 	}
 
