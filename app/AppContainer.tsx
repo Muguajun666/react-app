@@ -63,9 +63,9 @@ function HomeScreen() {
 	const creatRoomHandle = async (room: TRoomListItem) => {
 		console.log('加入房间', room)
 
-		const joinRoomRes = (await joinRoomApi({ id: room.id! })) as IResponse<any>
-		console.log('joinRoomRes', joinRoomRes)
-		if (!joinRoomRes.success) return
+		// const joinRoomRes = (await joinRoomApi({ id: room.id! })) as IResponse<any>
+		// console.log('joinRoomRes', joinRoomRes)
+		// if (!joinRoomRes.success) return
 
 		const rtctokenRes = (await getRtcTokenApi({
 			roomId: room.aliRoomId!
