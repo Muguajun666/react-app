@@ -356,7 +356,7 @@ const VoiceRoom = (): React.JSX.Element => {
 	}
 
 	const minimizeHandle = async () => {
-		await VoiceRoomModule.minimizeRoom(roomId, params)
+		await VoiceRoomModule.minimizeRoom(roomId, JSON.stringify(params))
 		RNNavigationModule.backToAndroid()
 
 		// test
