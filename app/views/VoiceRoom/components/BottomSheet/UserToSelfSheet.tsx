@@ -1,32 +1,38 @@
-import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet'
-import { forwardRef } from 'react'
+import BottomSheet, { BottomSheetBackdrop, BottomSheetView } from '@gorhom/bottom-sheet'
+import { forwardRef, useCallback, useMemo } from 'react'
 import { Image, Pressable, StyleSheet, Text } from 'react-native'
 
 interface BottomSheetProps {
 	onStandup?: () => void
-	onOpen?: () => void
-	onClose?: () => void
 	closeHandle?: () => void
 }
 
 const BottomSheetComponent = forwardRef<BottomSheet, BottomSheetProps>((props, ref) => {
-	const { onOpen, onClose, onStandup, closeHandle } = props
+	const {onStandup, closeHandle } = props
 
-	const sheetIndexChange = (index: number) => {
-		if (index === -1) {
-			onClose && onClose()
-		} else if (index === 0) {
-			onOpen && onOpen()
-		}
-	}
+	const snapPoints = useMemo(() => ['25%'], [])
+	
+	const renderBackdrop = useCallback(
+		(props: any) => (
+			<BottomSheetBackdrop
+				{...props}
+				disappearsOnIndex={-1}
+				appearsOnIndex={0}
+				pressBehavior={'close'}
+			/>
+		),
+		[]
+	)
 
 	return (
 		<BottomSheet
 			ref={ref}
 			index={-1}
-			enablePanDownToClose
+			snapPoints={snapPoints}
+			backdropComponent={renderBackdrop}
+			enableDynamicSizing={false}
+			enableContentPanningGesture={false}
 			style={styles.container}
-			onChange={sheetIndexChange}
 		>
 			<BottomSheetView style={styles.contentContainer}>
 				<Pressable onPress={() => onStandup && onStandup()} style={[styles.buttonContainer, {marginTop: 10}]}>

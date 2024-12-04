@@ -82,7 +82,16 @@ public class VoiceRoomModule extends ReactContextBaseJavaModule {
     public void createVoiceRoom(ReadableMap baseUserInfo, ReadableMap baseImInfo, ReadableMap baseRtcInfo, ReadableMap baseRoomInfo, Promise promise) {
         WritableMap response = new WritableNativeMap();
         try {
-            ARTCVoiceRoomEngine voiceRoom = AUIVoiceRoomFactory.createVoiceRoom();
+            final ARTCVoiceRoomEngine voiceRoom;
+
+            if (roomMap.get(baseRoomInfo.getString("aliRoomId")) != null) {
+                voiceRoom = roomMap.get(baseRoomInfo.getString("aliRoomId"));
+                response.putBoolean("result",true);
+                response.putString("msg","房间实例存在");
+                promise.resolve(response);
+            } else {
+                voiceRoom = AUIVoiceRoomFactory.createVoiceRoom();
+            }
 
             // 构建 UserInfo
             UserInfo userInfo = new UserInfo(baseUserInfo.getString("id"), baseUserInfo.getString("id"));

@@ -1,43 +1,66 @@
-import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet'
-import { forwardRef } from 'react'
+import BottomSheet, { BottomSheetBackdrop, BottomSheetView } from '@gorhom/bottom-sheet'
+import { forwardRef, useCallback, useMemo, useState } from 'react'
 import { Image, Pressable, StyleSheet, Text } from 'react-native'
 
 interface BottomSheetProps {
-  checkRelationship?: () => void
-	userHandle?: () => void
-	onOpen?: () => void
-	onClose?: () => void
+	checkRelationship?: (fn: any) => void
+	userHandle?: (type: 'add_friend' | 'send_message', refTag: 'MasterToUser' | 'UserToUser') => void
 	closeHandle?: () => void
 }
 
 const BottomSheetComponent = forwardRef<BottomSheet, BottomSheetProps>((props, ref) => {
-	const { onOpen, onClose, userHandle, closeHandle, checkRelationship } = props
+	const { userHandle, closeHandle, checkRelationship } = props
 
-	const sheetIndexChange = (index: number) => {
-		if (index === -1) {
-			onClose && onClose()
-		} else if (index === 0) {
-			onOpen && onOpen()
+	const [isFriend, setIsFriend] = useState(false)
+
+	const snapPoints = useMemo(() => ['25%'], [])
+
+	const handleSheetChange = useCallback((index: number) => {
+		if (index === 0) {
+			checkRelationship && checkRelationship(setIsFriend)
 		}
-	}
+	}, [])
+
+	const renderBackdrop = useCallback(
+		(props: any) => (
+			<BottomSheetBackdrop
+				{...props}
+				disappearsOnIndex={-1}
+				appearsOnIndex={0}
+				pressBehavior={'close'}
+			/>
+		),
+		[]
+	)
 
 	return (
 		<BottomSheet
 			ref={ref}
 			index={-1}
-			enablePanDownToClose
+			snapPoints={snapPoints}
+			backdropComponent={renderBackdrop}
+			enableDynamicSizing={false}
+			enableContentPanningGesture={false}
+			onChange={handleSheetChange}
 			style={styles.container}
-			onChange={sheetIndexChange}
 		>
 			<BottomSheetView style={styles.contentContainer}>
-				<Pressable onPress={() => userHandle && userHandle()} style={[styles.buttonContainer, {marginTop: 10}]}>
+				<Pressable
+					onPress={() => userHandle && userHandle(isFriend ? 'send_message' : 'add_friend', 'UserToUser')}
+					style={[styles.buttonContainer, { marginTop: 10 }]}
+				>
 					<Image
 						source={require('../../../../assets/images/buttonBg.png')}
 						style={{ width: '100%', height: '100%', position: 'absolute', borderRadius: 8 }}
 					/>
-					<Text style={{ fontSize: 16, fontWeight: 400, color: '#9605EC' }}>Add friends/Send message</Text>
+					<Text style={{ fontSize: 16, fontWeight: 400, color: '#9605EC' }}>
+						{isFriend ? 'Send message' : 'Add friends'}
+					</Text>
 				</Pressable>
-				<Pressable onPress={() => closeHandle && closeHandle()} style={[styles.buttonContainer, {marginBottom: 16, marginTop: 16}]}>
+				<Pressable
+					onPress={() => closeHandle && closeHandle()}
+					style={[styles.buttonContainer, { marginBottom: 16, marginTop: 16 }]}
+				>
 					<Text style={{ fontSize: 16, fontWeight: 400, color: '#000000' }}>Cancel</Text>
 				</Pressable>
 			</BottomSheetView>

@@ -31,6 +31,7 @@ import UserToSelfSheet from './components/BottomSheet/UserToSelfSheet'
 import UserToUsedSeatSheet from './components/BottomSheet/UserToUsedSeatSheet'
 import MasterToUsedSeatSheet from './components/BottomSheet/MasterToUsedSeatSheet'
 import Loading from '../../components/Loading'
+import { checkFriendApi } from '../../services/api/friend'
 
 export type VoiceRoomParams = {
 	key: string
@@ -51,8 +52,6 @@ const VoiceRoom = (): React.JSX.Element => {
 	const userToUsedSeatSheetRef = useRef<BottomSheet>(null)
 	const masterToUsedSeatSheetRef = useRef<BottomSheet>(null)
 
-	const [isBottomSheetOpen, setIsBottomSheetOpen] = useState<boolean>(false)
-
 	const { params } = useRoute<VoiceRoomParams>()
 
 	const {
@@ -68,20 +67,17 @@ const VoiceRoom = (): React.JSX.Element => {
 		label
 	} = params
 
-	const [selectedUser, setSelectedUser] = useState<UserInfo>({})
+	// 非状态类参数 不影响UI渲染
+	const selectedUser = useRef<UserInfo>()
+	const isOnSeat = useRef<boolean>(false)
+	const isMaster = useRef<boolean>(false)
 
-	const [isOnSeat, setIsOnSeat] = useState<boolean>(false)
-
+	// 状态类参数 影响UI渲染
 	const [isOnMic, setIsOnMic] = useState<boolean>(false)
-
 	const [audienceCount, setAudienceCount] = useState<number>(0)
-
 	const [masterSeat, setMasterSeat] = useState<SeatInfo>(initialMatserSeats)
-
 	const [seats, setSeats] = useState<Array<SeatInfo>>(initialSeats)
-
 	const [messageList, setMessageList] = useState<Array<TMessage>>([])
-
 	const [gameList, setGameList] = useState<Array<TGameInfo>>([
 		{
 			name: 'GameA'
@@ -90,10 +86,12 @@ const VoiceRoom = (): React.JSX.Element => {
 			name: 'GameB'
 		}
 	])
-
 	const [isJoin, setIsJoin] = useState<boolean>(false)
 
 	useEffect(() => {
+		isMaster.current = userInfo.id === createUser
+		console.log('isMaster', isMaster.current)
+
 		joinRoomHandle()
 
 		return () => {
@@ -112,7 +110,7 @@ const VoiceRoom = (): React.JSX.Element => {
 	}, [])
 
 	const setRoomHandle = () => {
-		if (userInfo.id !== createUser) {
+		if (!isMaster.current) {
 			EventEmitter.emit(LISTENER, { message: '您不是房主，无法修改房间设置' })
 		} else {
 			Navigation.navigate('PartySetter', {
@@ -214,7 +212,8 @@ const VoiceRoom = (): React.JSX.Element => {
 		})
 		DeviceEventEmitter.addListener('onKickOutRoom', async (data: any) => {
 			console.log('onKickOutRoom', data)
-			Navigation.back()
+			// todo 销毁操作
+			RNNavigationModule.backToAndroid()
 		})
 		DeviceEventEmitter.addListener('onMicUserMicrophoneChanged', (data: any) => {
 			const { jsonUserInfo, open } = data
@@ -232,7 +231,7 @@ const VoiceRoom = (): React.JSX.Element => {
 		if (result) {
 			setIsJoin(true)
 		} else {
-			Navigation.back()
+			RNNavigationModule.backToAndroid()
 		}
 	}
 
@@ -299,7 +298,7 @@ const VoiceRoom = (): React.JSX.Element => {
 				}
 
 				if (isCurrentUser) {
-					setIsOnSeat(true)
+					isOnSeat.current = true
 					setIsOnMic(true)
 					EventEmitter.emit(LISTENER, { message: '上麦成功' })
 				}
@@ -329,7 +328,7 @@ const VoiceRoom = (): React.JSX.Element => {
 				}
 
 				if (isCurrentUser) {
-					setIsOnSeat(false)
+					isOnSeat.current = false
 					setIsOnMic(false)
 					EventEmitter.emit(LISTENER, { message: '下麦成功' })
 				}
@@ -356,19 +355,13 @@ const VoiceRoom = (): React.JSX.Element => {
 		}
 	}
 
-
-
-	// const backHandle = async () => {
-	// 	const leaveRoomRes = await VoiceRoomModule.leaveRoom(roomId)
-
-	// 	if (leaveRoomRes) {
-	// 		RNNavigationModule.backToAndroid()
-	// 	}
-	// }
-
 	const minimizeHandle = async () => {
-		await VoiceRoomModule.minimizeRoom(roomId)
+		await VoiceRoomModule.minimizeRoom(roomId, params)
 		RNNavigationModule.backToAndroid()
+
+		// test
+		// const leaveRoomRes = await VoiceRoomModule.leaveRoom(roomId)
+		// Navigation.navigate('Test')
 	}
 
 	useEffect(() => {
@@ -387,71 +380,54 @@ const VoiceRoom = (): React.JSX.Element => {
 	}
 
 	const masterSeatHandle = () => {
-		if (userInfo.id !== createUser) {
+		if (!isMaster.current) {
 			if (masterSeat.isUsed) {
-				if (!isBottomSheetOpen) {
-					setSelectedUser(masterSeat.userInfo!)
-					setTimeout(() => {
-						userToUsedSeatSheetRef.current?.expand()
-					}, 0)
-				}
+				selectedUser.current = masterSeat.userInfo!
+				setTimeout(() => {
+					userToUsedSeatSheetRef.current?.expand()
+				}, 0)
 			} else {
 				EventEmitter.emit(LISTENER, { message: '房主不在' })
 			}
 		}
 	}
 
-	const onBottomSheetOpen = () => {
-		setIsBottomSheetOpen(true)
-	}
-
-	const onBottomSheetClose = () => {
-		setIsBottomSheetOpen(false)
-	}
-
 	const standupHandle = async () => {
 		// 自己的麦位 下麦
-		await VoiceRoomModule.leaveMic(roomId)
 		userToSelfSheetRef.current?.close()
+		await VoiceRoomModule.leaveMic(roomId)
 	}
 
 	const otherSeatHandle = async (pos: number) => {
 		// 房主逻辑
-		if (userInfo.id === createUser) {
+		if (isMaster.current) {
 			if (seats[pos - 1].isUsed) {
-				if (!isBottomSheetOpen) {
-					setSelectedUser(seats[pos - 1].userInfo!)
-					setTimeout(() => {
-						masterToUsedSeatSheetRef.current?.expand()
-					}, 0)
-				} else {
-					// todo 上锁解锁逻辑
-				}
+				selectedUser.current = seats[pos - 1].userInfo!
+				setTimeout(() => {
+					masterToUsedSeatSheetRef.current?.expand()
+				}, 0)
 			}
 		} else {
 			// 非房主逻辑
-			if (isOnSeat) {
+			if (isOnSeat.current) {
 				if (seats[pos - 1].userInfo?.userId === userInfo.id) {
-					if (!isBottomSheetOpen) {
-						userToSelfSheetRef.current?.expand()
-					}
+					userToSelfSheetRef.current?.expand()
 				} else {
 					if (seats[pos - 1].isUsed) {
-						if (!isBottomSheetOpen) {
-							setSelectedUser(seats[pos - 1].userInfo!)
-							setTimeout(() => {
-								userToUsedSeatSheetRef.current?.expand()
-							}, 0)
-						}
+						selectedUser.current = seats[pos - 1].userInfo!
+						setTimeout(() => {
+							userToUsedSeatSheetRef.current?.expand()
+						}, 0)
 					} else {
 						EventEmitter.emit(LISTENER, { message: '已在麦位上' })
 					}
 				}
 			} else {
 				if (seats[pos - 1].isUsed) {
-					if (!isBottomSheetOpen) {
+					selectedUser.current = seats[pos - 1].userInfo!
+					setTimeout(() => {
 						userToUsedSeatSheetRef.current?.expand()
-					}
+					}, 0)
 				} else {
 					await VoiceRoomModule.joinMic(roomId, {
 						micIndex: pos,
@@ -463,13 +439,13 @@ const VoiceRoom = (): React.JSX.Element => {
 	}
 
 	const kickOutHandle = async () => {
-		const kickOutRes = await VoiceRoomModule.kickOutRoom(roomId, selectedUser)
+		const kickOutRes = await VoiceRoomModule.kickOutRoom(roomId, selectedUser.current)
 		if (!kickOutRes) {
 			EventEmitter.emit(LISTENER, { message: '踢出房间失败' })
 		} else {
 			setSeats((prev) => {
 				const newSeats = prev.map((item) => {
-					if (item.userInfo?.userId === selectedUser.userId) {
+					if (item.userInfo?.userId === selectedUser.current?.userId) {
 						return {
 							...item,
 							isUsed: false,
@@ -496,6 +472,29 @@ const VoiceRoom = (): React.JSX.Element => {
 			VoiceRoomModule.switchMicrophone(roomId, false)
 		} else {
 			VoiceRoomModule.switchMicrophone(roomId, true)
+		}
+	}
+
+	const checkRelationshipHandle = async (setFn: any) => {
+		const res: any = await checkFriendApi(selectedUser.current?.userId!)
+		if (res.success) {
+			setFn(res.object[selectedUser.current?.userId!])
+		}
+	}
+
+	const userHandle = (
+		type: 'add_friend' | 'send_message',
+		refTag: 'MasterToUser' | 'UserToUser'
+	) => {
+		if (refTag === 'MasterToUser') {
+			masterToUsedSeatSheetRef.current?.close()
+		} else {
+			userToUsedSeatSheetRef.current?.close()
+		}
+		if (type === 'add_friend') {
+			console.log('添加好友', selectedUser.current)
+		} else {
+			console.log('发送消息', selectedUser.current)
 		}
 	}
 
@@ -656,25 +655,20 @@ const VoiceRoom = (): React.JSX.Element => {
 					{/* bottom-sheets */}
 					<UserToSelfSheet
 						ref={userToSelfSheetRef}
-						onClose={onBottomSheetClose}
-						onOpen={onBottomSheetOpen}
 						onStandup={standupHandle}
 						closeHandle={() => userToSelfSheetRef.current?.close()}
 					/>
 					<UserToUsedSeatSheet
 						ref={userToUsedSeatSheetRef}
-						onClose={onBottomSheetClose}
-						onOpen={onBottomSheetOpen}
-						userHandle={() => console.log('Add friends/Send message', selectedUser)}
-						checkRelationship={() => console.log('Check relationship')}
+						userHandle={userHandle}
+						checkRelationship={checkRelationshipHandle}
 						closeHandle={() => userToUsedSeatSheetRef.current?.close()}
 					/>
 					<MasterToUsedSeatSheet
 						ref={masterToUsedSeatSheetRef}
-						onClose={onBottomSheetClose}
-						onOpen={onBottomSheetOpen}
-						userHandle={() => console.log('Add friends/Send message', selectedUser)}
-						onLockSeat={() => console.log('Lock seat')}
+						userHandle={userHandle}
+						checkRelationship={checkRelationshipHandle}
+						onMute={() => console.log('Mute')}
 						onKickOut={kickOutHandle}
 						closeHandle={() => masterToUsedSeatSheetRef.current?.close()}
 					/>

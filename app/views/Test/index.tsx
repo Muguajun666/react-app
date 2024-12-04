@@ -43,7 +43,10 @@ const Test = (): React.JSX.Element => {
 	const [currentRoom, setCurrentRoom] = useState<TRoomListItem>({})
 
 	const loginHandle = async () => {
-		const res = (await loginApi({ loginType: 'TEMP', phoneMac: 'd2b82b944510dc0c' })) as IResponse<any>
+		const res = (await loginApi({
+			loginType: 'TEMP',
+			phoneMac: 'd2b82b944510dc0c'
+		})) as IResponse<any>
 		// const res = (await loginApi({ loginType: 'TEMP', phoneMac: '000000' })) as IResponse<any>
 		// const res = (await loginApi({ loginType: 'TEMP', phoneMac: 'liushuli' })) as IResponse<any>
 		if (res.success) {
@@ -163,7 +166,7 @@ const Test = (): React.JSX.Element => {
 	return (
 		<SafeAreaView>
 			<StatusBar className="bg-white" barStyle={'dark-content'} />
-			<ScrollView contentInsetAdjustmentBehavior="automatic">
+			<View>
 				<View className="flex flex-col">
 					<View className="bg-green-100 h-30 items-center p-1">
 						<Text style={styles.text}>Token: {token}</Text>
@@ -182,7 +185,7 @@ const Test = (): React.JSX.Element => {
 						<Button title="我的订单" onPress={goMyOrder}></Button>
 					</View>
 				</View>
-			</ScrollView>
+			</View>
 			<View>
 				{isLoading && <ActivityIndicator size="large" animating={isLoading} className="mt-12" />}
 				{!isLoading && (
@@ -190,6 +193,7 @@ const Test = (): React.JSX.Element => {
 						data={voiceRoomList}
 						renderItem={roomRenderItem}
 						keyExtractor={(item) => item.id!.toString()}
+						style={{ height: 400 }}
 					/>
 				)}
 			</View>
