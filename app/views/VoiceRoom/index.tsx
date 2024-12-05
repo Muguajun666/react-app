@@ -30,6 +30,7 @@ import BottomSheet from '@gorhom/bottom-sheet'
 import UserToSelfSheet from './components/BottomSheet/UserToSelfSheet'
 import UserToUsedSeatSheet from './components/BottomSheet/UserToUsedSeatSheet'
 import MasterToUsedSeatSheet from './components/BottomSheet/MasterToUsedSeatSheet'
+import MasterToEmptySheet from './components/BottomSheet/MasterToEmptySheet'
 import Loading from '../../components/Loading'
 import { checkFriendApi } from '../../services/api/friend'
 
@@ -51,6 +52,7 @@ const VoiceRoom = (): React.JSX.Element => {
 	const userToSelfSheetRef = useRef<BottomSheet>(null)
 	const userToUsedSeatSheetRef = useRef<BottomSheet>(null)
 	const masterToUsedSeatSheetRef = useRef<BottomSheet>(null)
+	const masterToEmptySheetRef = useRef<BottomSheet>(null)
 
 	const { params } = useRoute<VoiceRoomParams>()
 
@@ -69,6 +71,7 @@ const VoiceRoom = (): React.JSX.Element => {
 
 	// 非状态类参数 不影响UI渲染
 	const selectedUser = useRef<UserInfo>()
+	const selectedPos = useRef<number>(-1)
 	const isOnSeat = useRef<boolean>(false)
 	const isMaster = useRef<boolean>(false)
 
@@ -106,6 +109,7 @@ const VoiceRoom = (): React.JSX.Element => {
 			DeviceEventEmitter.removeAllListeners('onMemberCountChanged')
 			DeviceEventEmitter.removeAllListeners('onKickOutRoom')
 			DeviceEventEmitter.removeAllListeners('onMicUserMicrophoneChanged')
+			DeviceEventEmitter.removeAllListeners('onMute')
 		}
 	}, [])
 
@@ -213,7 +217,10 @@ const VoiceRoom = (): React.JSX.Element => {
 		DeviceEventEmitter.addListener('onKickOutRoom', async (data: any) => {
 			console.log('onKickOutRoom', data)
 			// todo 销毁操作
-			RNNavigationModule.backToAndroid()
+			// RNNavigationModule.backToAndroid()
+
+			// test
+			Navigation.back()
 		})
 		DeviceEventEmitter.addListener('onMicUserMicrophoneChanged', (data: any) => {
 			const { jsonUserInfo, open } = data
@@ -223,6 +230,10 @@ const VoiceRoom = (): React.JSX.Element => {
 				open ? setIsOnMic(true) : setIsOnMic(false)
 			}
 			updateSeats(newUserInfo, MIC_HANDLE_TYPE.SWITCH)
+		})
+		DeviceEventEmitter.addListener('onMute', (mute: boolean) => {
+			console.log('onMute', mute)
+			EventEmitter.emit(LISTENER, { message: mute ? '被静音' : '取消静音' })
 		})
 
 		const joinRoomRes = await VoiceRoomModule.joinRoom(roomId)
@@ -356,12 +367,12 @@ const VoiceRoom = (): React.JSX.Element => {
 	}
 
 	const minimizeHandle = async () => {
-		await VoiceRoomModule.minimizeRoom(roomId, JSON.stringify(params))
-		RNNavigationModule.backToAndroid()
+		// await VoiceRoomModule.minimizeRoom(roomId, JSON.stringify(params))
+		// RNNavigationModule.backToAndroid()
 
 		// test
-		// const leaveRoomRes = await VoiceRoomModule.leaveRoom(roomId)
-		// Navigation.navigate('Test')
+		const leaveRoomRes = await VoiceRoomModule.leaveRoom(roomId)
+		Navigation.back()
 	}
 
 	useEffect(() => {
@@ -399,13 +410,19 @@ const VoiceRoom = (): React.JSX.Element => {
 	}
 
 	const otherSeatHandle = async (pos: number) => {
+		selectedPos.current = pos
+		selectedUser.current = seats[pos - 1].userInfo || undefined
+
 		// 房主逻辑
 		if (isMaster.current) {
 			if (seats[pos - 1].isUsed) {
-				selectedUser.current = seats[pos - 1].userInfo!
 				setTimeout(() => {
 					masterToUsedSeatSheetRef.current?.expand()
 				}, 0)
+			} else {
+				// setTimeout(() => {
+				// 	masterToEmptySheetRef.current?.expand()
+				// }, 0)
 			}
 		} else {
 			// 非房主逻辑
@@ -414,7 +431,6 @@ const VoiceRoom = (): React.JSX.Element => {
 					userToSelfSheetRef.current?.expand()
 				} else {
 					if (seats[pos - 1].isUsed) {
-						selectedUser.current = seats[pos - 1].userInfo!
 						setTimeout(() => {
 							userToUsedSeatSheetRef.current?.expand()
 						}, 0)
@@ -424,7 +440,6 @@ const VoiceRoom = (): React.JSX.Element => {
 				}
 			} else {
 				if (seats[pos - 1].isUsed) {
-					selectedUser.current = seats[pos - 1].userInfo!
 					setTimeout(() => {
 						userToUsedSeatSheetRef.current?.expand()
 					}, 0)
@@ -493,8 +508,29 @@ const VoiceRoom = (): React.JSX.Element => {
 		}
 		if (type === 'add_friend') {
 			console.log('添加好友', selectedUser.current)
+			VoiceRoomModule.addFriend(selectedUser.current?.userId!)
+			EventEmitter.emit(LISTENER, { message: '已发送好友申请' })
 		} else {
 			console.log('发送消息', selectedUser.current)
+			VoiceRoomModule.sendMessageToFriend(selectedUser.current?.userId!)
+		}
+	}
+
+	const muteHandle = async() => {
+		masterToUsedSeatSheetRef.current?.close()
+
+		if (!selectedUser.current) return
+
+		const muteValue = !seats[selectedPos.current - 1].isMuted
+
+		const res = await VoiceRoomModule.mute(roomId, selectedUser.current.userId, muteValue)
+
+		if (res) {
+			if (muteValue) {
+				EventEmitter.emit(LISTENER, { message: '已静音' })
+			} else {
+				EventEmitter.emit(LISTENER, { message: '已取消静音' })
+			}
 		}
 	}
 
@@ -668,9 +704,14 @@ const VoiceRoom = (): React.JSX.Element => {
 						ref={masterToUsedSeatSheetRef}
 						userHandle={userHandle}
 						checkRelationship={checkRelationshipHandle}
-						onMute={() => console.log('Mute')}
+						onMute={muteHandle}
 						onKickOut={kickOutHandle}
+						isMuted={seats[selectedPos.current - 1]?.isMuted}
 						closeHandle={() => masterToUsedSeatSheetRef.current?.close()}
+					/>
+					<MasterToEmptySheet
+						ref={masterToEmptySheetRef}
+						closeHandle={() => masterToEmptySheetRef.current?.close()}
 					/>
 				</View>
 			) : (

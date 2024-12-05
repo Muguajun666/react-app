@@ -280,6 +280,11 @@ public class VoiceRoomModule extends ReactContextBaseJavaModule {
                 params.putBoolean("open", open);
                 reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit("onMicUserMicrophoneChanged", params);
             }
+
+            @Override
+            public void onMute(boolean mute) {
+                reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class).emit("onMute", mute);
+            }
         };
 
         voiceRoom.addObserver(this.voiceRoomObserver);
@@ -483,6 +488,40 @@ public class VoiceRoomModule extends ReactContextBaseJavaModule {
                 promise.resolve(null);
             }
         });
+    }
+
+    // 静音
+    @ReactMethod
+    public void mute(String aliRoomId, String userId, Boolean mute, Promise promise) {
+        ARTCVoiceRoomEngine voiceRoom = roomMap.get(aliRoomId);
+
+        UserInfo user = new UserInfo(userId, userId);
+
+        voiceRoom.mute(user, mute, new ActionCallback() {
+            @Override
+            public void onResult(int code, String msg, Map<String, Object> params) {
+                System.out.println("--------------mute-------------");
+                System.out.println(code);
+                System.out.println(msg);
+                System.out.println(params);
+                System.out.println("--------------mute-------------");
+                if (code != 0) {
+                    promise.resolve(false);
+                } else {
+                    promise.resolve(true);
+                }
+            }
+        });
+    }
+
+    @ReactMethod
+    public void addFriend(String userId) {
+
+    }
+
+    @ReactMethod
+    public void sendMessageToFriend(String userId) {
+
     }
 
     @ReactMethod

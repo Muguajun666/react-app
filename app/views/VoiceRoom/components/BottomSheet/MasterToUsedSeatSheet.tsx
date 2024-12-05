@@ -8,10 +8,11 @@ interface BottomSheetProps {
 	onKickOut?: () => void
 	onMute?: () => void
 	closeHandle?: () => void
+	isMuted?: boolean
 }
 
 const BottomSheetComponent = forwardRef<BottomSheet, BottomSheetProps>((props, ref) => {
-	const { onKickOut, closeHandle, userHandle, onMute, checkRelationship } = props
+	const { onKickOut, closeHandle, userHandle, onMute, checkRelationship, isMuted } = props
 
 	const [isFriend, setIsFriend] = useState(false)
 
@@ -79,7 +80,7 @@ const BottomSheetComponent = forwardRef<BottomSheet, BottomSheetProps>((props, r
 						source={require('../../../../assets/images/buttonBg.png')}
 						style={{ width: '100%', height: '100%', position: 'absolute', borderRadius: 8 }}
 					/>
-					<Text style={{ fontSize: 16, fontWeight: 400, color: '#9605EC' }}>Mute</Text>
+					<Text style={{ fontSize: 16, fontWeight: 400, color: '#9605EC' }}>{isMuted ? 'Unmute' : 'Mute'}</Text>
 				</Pressable>
 				<Pressable
 					onPress={() => closeHandle && closeHandle()}
