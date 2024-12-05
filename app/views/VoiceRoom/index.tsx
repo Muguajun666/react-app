@@ -169,6 +169,7 @@ const VoiceRoom = (): React.JSX.Element => {
 				return [...prev]
 			})
 			messageBoxRef.current?.scrollToEnd()
+			updateSeats(user, MIC_HANDLE_TYPE.KICK)
 		})
 		DeviceEventEmitter.addListener('onJoinedMic', (data: string) => {
 			// 有人上麦
@@ -217,10 +218,10 @@ const VoiceRoom = (): React.JSX.Element => {
 		DeviceEventEmitter.addListener('onKickOutRoom', async (data: any) => {
 			console.log('onKickOutRoom', data)
 			// todo 销毁操作
-			// RNNavigationModule.backToAndroid()
+			RNNavigationModule.backToAndroid()
 
 			// test
-			Navigation.back()
+			// Navigation.back()
 		})
 		DeviceEventEmitter.addListener('onMicUserMicrophoneChanged', (data: any) => {
 			const { jsonUserInfo, open } = data
@@ -362,17 +363,33 @@ const VoiceRoom = (): React.JSX.Element => {
 						return newSeats
 					})
 				}
+			} else if (type === MIC_HANDLE_TYPE.KICK) {
+				const findIndex = seats.findIndex((item) => item.userInfo?.userId === micUsers.userId)
+				if (findIndex !== -1) {
+					setSeats((prev) => {
+						const newSeats = [...prev]
+
+						newSeats[findIndex] = {
+							...newSeats[findIndex],
+							isUsed: false,
+							isMuted: false,
+							userInfo: undefined
+						}
+
+						return newSeats
+					})
+				}
 			}
 		}
 	}
 
 	const minimizeHandle = async () => {
-		// await VoiceRoomModule.minimizeRoom(roomId, JSON.stringify(params))
-		// RNNavigationModule.backToAndroid()
+		await VoiceRoomModule.minimizeRoom(roomId, JSON.stringify(params))
+		RNNavigationModule.backToAndroid()
 
 		// test
-		const leaveRoomRes = await VoiceRoomModule.leaveRoom(roomId)
-		Navigation.back()
+		// const leaveRoomRes = await VoiceRoomModule.leaveRoom(roomId)
+		// Navigation.back()
 	}
 
 	useEffect(() => {
