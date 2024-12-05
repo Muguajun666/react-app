@@ -159,6 +159,7 @@ const VoiceRoom = (): React.JSX.Element => {
 		DeviceEventEmitter.addListener('onLeavedRoom', (data: string) => {
 			console.log('onLeavedRoom', data)
 			const user = JSON.parse(data)
+			updateSeats(user, MIC_HANDLE_TYPE.KICK)
 			// 添加消息
 			setMessageList((prev) => {
 				prev.push({
@@ -169,7 +170,6 @@ const VoiceRoom = (): React.JSX.Element => {
 				return [...prev]
 			})
 			messageBoxRef.current?.scrollToEnd()
-			updateSeats(user, MIC_HANDLE_TYPE.KICK)
 		})
 		DeviceEventEmitter.addListener('onJoinedMic', (data: string) => {
 			// 有人上麦
@@ -364,21 +364,21 @@ const VoiceRoom = (): React.JSX.Element => {
 					})
 				}
 			} else if (type === MIC_HANDLE_TYPE.KICK) {
-				const findIndex = seats.findIndex((item) => item.userInfo?.userId === micUsers.userId)
-				if (findIndex !== -1) {
-					setSeats((prev) => {
-						const newSeats = [...prev]
-
-						newSeats[findIndex] = {
-							...newSeats[findIndex],
-							isUsed: false,
-							isMuted: false,
-							userInfo: undefined
+				setSeats((prev) => {
+					const newSeats = prev.map((item) => {
+						if (item.userInfo?.userId === micUsers.userId) {
+							return {
+								...item,
+								isUsed: false,
+								isMuted: false,
+								userInfo: undefined
+							}
 						}
-
-						return newSeats
+						return item
 					})
-				}
+
+					return newSeats
+				})
 			}
 		}
 	}
