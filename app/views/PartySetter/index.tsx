@@ -171,7 +171,10 @@ const PartySetter = (): React.JSX.Element => {
 					const room = myRoomRes.object
 					creatRoomHandle(room)
 				}
+			} else {
+				EventEmitter.emit(LISTENER, { message: result.message })
 			}
+
 		} else if (mode === 'edit') {
 			const params: ICreateRoomParams = {
 				id: id,
@@ -187,6 +190,8 @@ const PartySetter = (): React.JSX.Element => {
 			console.log('createOrSetRoomApi', result)
 			if (result.success) {
 				Navigation.back()
+			} else {
+				EventEmitter.emit(LISTENER, { message: result.message })
 			}
 		}
 	}
