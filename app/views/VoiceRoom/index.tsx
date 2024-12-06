@@ -37,7 +37,7 @@ import { checkFriendApi } from '../../services/api/friend'
 export type VoiceRoomParams = {
 	key: string
 	name: string
-	params: TRoomListItem
+	params: TRoomListItem & { tag?: string }
 }
 
 const VoiceRoom = (): React.JSX.Element => {
@@ -66,7 +66,8 @@ const VoiceRoom = (): React.JSX.Element => {
 		isPrivate,
 		language,
 		password,
-		label
+		label,
+		tag
 	} = params
 
 	// 非状态类参数 不影响UI渲染
@@ -237,13 +238,19 @@ const VoiceRoom = (): React.JSX.Element => {
 			EventEmitter.emit(LISTENER, { message: mute ? '被静音' : '取消静音' })
 		})
 
-		const joinRoomRes = await VoiceRoomModule.joinRoom(roomId)
-		const { result, msg } = joinRoomRes
-		console.log('joinRoomRes', result, msg)
-		if (result) {
-			setIsJoin(true)
+		if (tag !== 'minimize') {
+			const joinRoomRes = await VoiceRoomModule.joinRoom(roomId)
+			const { result, msg } = joinRoomRes
+			console.log('joinRoomRes', result, msg)
+			if (result) {
+				setIsJoin(true)
+			} else {
+				RNNavigationModule.backToAndroid()
+			}
 		} else {
-			RNNavigationModule.backToAndroid()
+			console.log('tag', tag)
+			await VoiceRoomModule.getMicInfoList(roomId)
+			setIsJoin(true)
 		}
 	}
 
@@ -384,7 +391,7 @@ const VoiceRoom = (): React.JSX.Element => {
 	}
 
 	const minimizeHandle = async () => {
-		await VoiceRoomModule.minimizeRoom(roomId, JSON.stringify(params))
+		await VoiceRoomModule.minimizeRoom(roomId, JSON.stringify({...params, tag: 'minimize'}))
 		RNNavigationModule.backToAndroid()
 
 		// test
@@ -533,7 +540,7 @@ const VoiceRoom = (): React.JSX.Element => {
 		}
 	}
 
-	const muteHandle = async() => {
+	const muteHandle = async () => {
 		masterToUsedSeatSheetRef.current?.close()
 
 		if (!selectedUser.current) return
@@ -549,6 +556,12 @@ const VoiceRoom = (): React.JSX.Element => {
 				EventEmitter.emit(LISTENER, { message: '已取消静音' })
 			}
 		}
+	}
+
+	const emojiHandle = async () => {
+		console.log('emojiHandle')
+		// test
+		// await VoiceRoomModule.getMicInfoList(roomId)
 	}
 
 	return (
@@ -691,7 +704,7 @@ const VoiceRoom = (): React.JSX.Element => {
 						className="w-full flex flex-row items-center"
 						style={{ marginLeft: 30, marginTop: 10 }}
 					>
-						<MessageInput onInput={sendMessageHandle} />
+						<MessageInput onInput={sendMessageHandle} onEmoji={emojiHandle} />
 						{isOnSeat && (
 							<Pressable onPress={() => microphoneHandle()} style={{ marginLeft: 50 }}>
 								<Image

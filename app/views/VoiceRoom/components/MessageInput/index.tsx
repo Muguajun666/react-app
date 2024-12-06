@@ -6,10 +6,11 @@ import React from 'react'
 interface MessageInputProps {
 	style?: StyleProp<ViewStyle>
 	onInput?: (text: string) => void
+	onEmoji?: () => void
 }
 
 const MessageInput = (props: MessageInputProps): React.JSX.Element => {
-	const { style, onInput } = props
+	const { style, onInput, onEmoji } = props
 
 	const [value, setValue] = React.useState('')
 
@@ -30,7 +31,7 @@ const MessageInput = (props: MessageInputProps): React.JSX.Element => {
 					setValue('')
 				}}
 			/>
-			<Pressable onPress={() => console.log('emoji')}>
+			<Pressable onPress={() => onEmoji && onEmoji()}>
 				<Icon
 					iconFamily="SimpleLineIcons"
 					name="emotsmile"
