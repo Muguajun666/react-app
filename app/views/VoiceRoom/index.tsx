@@ -78,6 +78,7 @@ const VoiceRoom = (): React.JSX.Element => {
 
 	// 状态类参数 影响UI渲染
 	const [isOnMic, setIsOnMic] = useState<boolean>(false)
+	const [showMic, setShowMic] = useState<boolean>(false)
 	const [audienceCount, setAudienceCount] = useState<number>(0)
 	const [masterSeat, setMasterSeat] = useState<SeatInfo>(initialMatserSeats)
 	const [seats, setSeats] = useState<Array<SeatInfo>>(initialSeats)
@@ -318,6 +319,7 @@ const VoiceRoom = (): React.JSX.Element => {
 
 				if (isCurrentUser) {
 					isOnSeat.current = true
+					setShowMic(true)
 					setIsOnMic(true)
 					EventEmitter.emit(LISTENER, { message: '上麦成功' })
 				}
@@ -348,6 +350,7 @@ const VoiceRoom = (): React.JSX.Element => {
 
 				if (isCurrentUser) {
 					isOnSeat.current = false
+					setShowMic(false)
 					setIsOnMic(false)
 					EventEmitter.emit(LISTENER, { message: '下麦成功' })
 				}
@@ -705,13 +708,13 @@ const VoiceRoom = (): React.JSX.Element => {
 						style={{ marginLeft: 30, marginTop: 10 }}
 					>
 						<MessageInput onInput={sendMessageHandle} onEmoji={emojiHandle} />
-						{isOnSeat && (
+						{showMic && (
 							<Pressable onPress={() => microphoneHandle()} style={{ marginLeft: 50 }}>
 								<Image
 									source={
 										isOnMic
-											? require('../../assets/images/mic-off.png')
-											: require('../../assets/images/mic-on.png')
+											? require('../../assets/images/mic-on.png')
+											: require('../../assets/images/mic-off.png')
 									}
 									style={{ width: 30, height: 30 }}
 								/>
